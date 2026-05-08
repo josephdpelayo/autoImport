@@ -1,0 +1,2252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>AutoImport Tepic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <style>
+    /* ── Reset & base ── */
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    :root{
+      --bg:#F5F5F7;--bg2:#ffffff;--bg3:#EBEBED;
+      --text1:#1a1a1a;--text2:#555;--text3:#aaa;--border:#e8e8e8;
+      --green:#27500A;--green-bg:#EAF3DE;
+      --blue:#0C447C;--blue-bg:#E6F1FB;
+      --red:#A32D2D;--red-bg:#FCEBEB;
+      --purple:#3C3489;--purple-bg:#EEEDFE;
+      --orange:#854F0B;--orange-bg:#FAEEDA;
+      --r-sm:10px;--r-md:14px;--r-lg:16px;
+      --shadow:0 2px 12px rgba(0,0,0,0.06);
+      --font:'DM Sans',system-ui,sans-serif;
+    }
+    html,body{font-family:var(--font);background:var(--bg);color:var(--text1);min-height:100vh;max-width:430px;margin:0 auto;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+    /* ── Screens ── */
+    .screen{display:none;min-height:100vh;padding-bottom:90px;animation:fadeIn 0.2s ease}
+    .screen.active{display:block}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ── Subviews (dentro de screens) ── */
+    .subview{display:none}
+    .subview.active{display:block;animation:fadeIn 0.2s ease}
+
+    /* ── Topbar ── */
+    .topbar{padding:10px 20px 12px;display:flex;align-items:center;gap:12px;background:var(--bg);position:sticky;top:0;z-index:10}
+    .topbar-title{font-size:17px;font-weight:500;flex:1}
+    .back-btn{width:34px;height:34px;border-radius:50%;background:var(--bg2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow)}
+    .back-btn i{font-size:16px;color:var(--text1)}
+
+    /* ── Sections ── */
+    .section{padding:0 20px;margin-bottom:16px}
+    .sec-label{font-size:12px;font-weight:500;color:var(--text3);margin-bottom:8px;padding:0 2px}
+    .sec-hd{padding:0 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .sec-hd h3{font-size:14px;font-weight:500}
+    .sec-link{font-size:12px;color:var(--text2);cursor:pointer;border:none;background:none;font-family:var(--font)}
+
+    /* ── Cards ── */
+    .card{background:var(--bg2);border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow)}
+    .card-dark{background:var(--text1);border-radius:var(--r-lg);padding:16px}
+
+    /* ── Buttons ── */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:13px 18px;border-radius:var(--r-md);border:none;cursor:pointer;font-size:14px;font-weight:500;font-family:var(--font);transition:opacity 0.15s}
+    .btn:active{opacity:0.8}
+    .btn-primary{background:var(--text1);color:#fff}
+    .btn-secondary{background:var(--bg2);color:var(--text1);box-shadow:var(--shadow)}
+    .btn-green{background:var(--green);color:#fff}
+    .btn-red{background:var(--red);color:#fff}
+    .btn-purple{background:var(--purple);color:#fff}
+    .btn-wa{background:#25D366;color:#fff}
+    .btn-full{width:100%}
+    .btn i{font-size:16px}
+    .btn:disabled{opacity:0.5;cursor:not-allowed}
+
+    /* ── Fields ── */
+    .field{margin-bottom:12px}
+    .field:last-child{margin-bottom:0}
+    .field label{display:block;font-size:12px;color:var(--text3);margin-bottom:5px}
+    .field input,.field select,.field textarea{width:100%;font-size:14px;padding:10px 12px;border:0.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg);color:var(--text1);outline:none;font-family:var(--font);transition:border-color 0.15s,background 0.15s}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--text1);background:var(--bg2)}
+    .field textarea{resize:vertical;min-height:60px}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+    /* ── Pills ── */
+    .pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:500}
+    .pill-vendido{background:var(--green-bg);color:var(--green)}
+    .pill-taller{background:var(--red-bg);color:var(--red)}
+    .pill-venta{background:var(--orange-bg);color:var(--orange)}
+    .pill-proceso{background:var(--blue-bg);color:var(--blue)}
+    .pill-sim{background:var(--orange-bg);color:var(--orange)}
+
+    /* ── Bottom nav ── */
+    .bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--bg2);border-top:0.5px solid var(--border);padding:8px 0 20px;display:flex;z-index:100}
+    .bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;cursor:pointer;padding:4px 0}
+    .bn i{font-size:22px;color:var(--text3)}
+    .bn span{font-size:10px;color:var(--text3)}
+    .bn.active i,.bn.active span{color:var(--text1)}
+
+    /* ── Sheet ── */
+    .sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:flex-end;justify-content:center}
+    .sheet-overlay.show{display:flex}
+    .sheet{background:var(--bg);border-radius:24px 24px 0 0;width:100%;max-width:430px;padding:0 16px 32px;max-height:85vh;overflow-y:auto}
+    .sheet::-webkit-scrollbar{display:none}
+    .sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0}
+    .sheet-title{font-size:15px;font-weight:500;padding:14px 4px 12px}
+    .sheet-item{background:var(--bg2);border-radius:var(--r-md);padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;border:none;width:100%;text-align:left;margin-bottom:6px;font-family:var(--font)}
+    .sheet-item:active{background:var(--bg3)}
+    .sheet-item.sel{background:var(--text1)}
+    .sh-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .sh-ic i{font-size:17px}
+    .sh-name{font-size:13px;font-weight:500;color:var(--text1)}
+    .sh-desc{font-size:11px;color:var(--text3);margin-top:1px}
+    .sh-check{font-size:16px;color:#fff;display:none;margin-left:auto}
+    .sheet-item.sel .sh-name{color:#fff}
+    .sheet-item.sel .sh-desc{color:rgba(255,255,255,0.4)}
+    .sheet-item.sel .sh-ic{background:rgba(255,255,255,0.12)!important}
+    .sheet-item.sel .sh-ic i{color:#fff!important}
+    .sheet-item.sel .sh-check{display:block}
+
+    /* ── Toast ── */
+    .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--text1);color:#fff;padding:8px 18px;border-radius:20px;font-size:12px;white-space:nowrap;opacity:0;transition:opacity 0.25s;pointer-events:none;z-index:300}
+    .toast.show{opacity:1}
+
+    /* ── Spinner ── */
+    .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--text1);border-radius:50%;animation:spin 0.7s linear infinite}
+    .spinner-white{border-color:rgba(255,255,255,0.3);border-top-color:#fff}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading{display:flex;align-items:center;justify-content:center;min-height:120px;gap:8px;color:var(--text3);font-size:14px}
+    .empty{text-align:center;padding:40px 20px;color:var(--text3)}
+    .empty i{font-size:40px;margin-bottom:12px;display:block}
+
+    /* ── FAB ── */
+    .fab{position:fixed;bottom:90px;right:20px;width:52px;height:52px;background:var(--text1);border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.2);z-index:50}
+    .fab i{font-size:24px;color:#fff}
+    .fab:active{opacity:0.85}
+
+    /* ── Selector button ── */
+    .selector-btn{background:var(--bg2);border-radius:var(--r-lg);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border:none;width:100%;text-align:left;box-shadow:var(--shadow);font-family:var(--font)}
+    .selector-btn:active{background:var(--bg3)}
+    .sel-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .sel-ic i{font-size:18px}
+    .sel-name{font-size:14px;font-weight:500}
+    .sel-name.ph{color:var(--text3)}
+    .sel-desc{font-size:11px;color:var(--text3);margin-top:1px}
+
+    /* ── Dashboard ── */
+    .greeting{padding:8px 20px 16px}
+    .greet-sub{font-size:12px;color:var(--text3);margin-bottom:2px}
+    .greet-name{font-size:22px;font-weight:500}
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .stat-card{background:var(--bg2);border-radius:var(--r-lg);padding:13px;box-shadow:var(--shadow)}
+    .stat-card.dark{background:var(--text1)}
+    .stat-ic{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+    .stat-ic i{font-size:14px}
+    .stat-label{font-size:11px;color:var(--text3);margin-bottom:3px}
+    .stat-card.dark .stat-label{color:rgba(255,255,255,0.4)}
+    .stat-val{font-size:20px;font-weight:500}
+    .stat-card.dark .stat-val{color:#fff}
+    .stat-sub{font-size:10px;color:var(--text3);margin-top:3px}
+    .stat-card.dark .stat-sub{color:rgba(255,255,255,0.3)}
+
+    /* ── Auto cards ── */
+    .autos-list{padding:0 20px;display:flex;flex-direction:column;gap:8px}
+    .auto-card{background:var(--bg2);border-radius:var(--r-lg);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:var(--shadow)}
+    .auto-card:active{background:var(--bg3)}
+    .auto-thumb{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .auto-thumb i{font-size:22px}
+    .auto-info{flex:1;min-width:0}
+    .auto-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .auto-meta{font-size:11px;color:var(--text3);margin-top:2px}
+    .auto-prog{height:3px;background:var(--bg3);border-radius:2px;margin-top:7px;overflow:hidden}
+    .auto-prog-fill{height:100%;border-radius:2px}
+    .auto-right{text-align:right;flex-shrink:0}
+    .auto-gain{font-size:13px;font-weight:500}
+    .auto-dias{font-size:10px;color:var(--text3);margin-top:3px}
+
+    /* ── Capital cards ── */
+    .cap-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .cap-card{border-radius:var(--r-md);padding:12px}
+    .cap-card.j{background:var(--blue-bg)}
+    .cap-card.e{background:var(--green-bg)}
+    .cap-name{font-size:11px;font-weight:500;margin-bottom:6px}
+    .cap-card.j .cap-name{color:var(--blue)}
+    .cap-card.e .cap-name{color:var(--green)}
+    .cap-row2{display:flex;justify-content:space-between;margin-bottom:3px}
+    .cap-lbl{font-size:10px;color:var(--text3)}
+    .cap-val{font-size:10px;font-weight:500}
+    .cap-card.j .cap-val{color:var(--blue)}
+    .cap-card.e .cap-val{color:var(--green)}
+    .cap-total{border-top:0.5px solid rgba(0,0,0,0.08);margin-top:6px;padding-top:6px;display:flex;justify-content:space-between}
+    .cap-total-val{font-size:15px;font-weight:500}
+    .cap-card.j .cap-total-val{color:var(--blue)}
+    .cap-card.e .cap-total-val{color:var(--green)}
+
+    /* ── Préstamo ── */
+    .prestamo-card{background:var(--bg2);border-radius:var(--r-lg);padding:14px;box-shadow:var(--shadow)}
+    .pc-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .pc-title{font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px}
+    .pc-slots{display:flex;gap:8px}
+    .pc-slot{flex:1;border-radius:10px;padding:10px}
+    .pc-slot.ocupado{background:var(--purple-bg)}
+    .pc-slot.libre{background:var(--bg3);border:1px dashed var(--border)}
+    .pc-slot-label{font-size:9px;font-weight:500;color:var(--purple);margin-bottom:4px}
+    .pc-slot.libre .pc-slot-label{color:var(--text3)}
+    .pc-slot-auto{font-size:11px;font-weight:500;color:var(--purple)}
+    .pc-slot-monto{font-size:12px;font-weight:500;color:var(--purple);margin-top:3px}
+
+    /* ── Timeline ── */
+    .timeline{display:flex;flex-direction:column}
+    .tl-item{display:flex;gap:12px;padding-bottom:4px}
+    .tl-left{display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0}
+    .tl-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1}
+    .tl-dot.done{background:var(--text1)}
+    .tl-dot.done i{font-size:14px;color:#fff}
+    .tl-dot.activo{background:var(--orange-bg);border:2px solid var(--orange)}
+    .tl-dot.activo i{font-size:14px;color:var(--orange)}
+    .tl-dot.pending{background:var(--bg3)}
+    .tl-dot.pending i{font-size:14px;color:var(--text3)}
+    .tl-line{width:1.5px;flex:1;background:var(--border);margin:2px 0;min-height:16px}
+    .tl-line.done{background:var(--text1)}
+    .tl-content{flex:1;padding-bottom:16px}
+    .tl-name{font-size:13px;font-weight:500;color:var(--text1)}
+    .tl-name.pending{color:var(--text3)}
+    .tl-row{display:flex;justify-content:space-between;align-items:flex-start}
+    .tl-monto{font-size:13px;font-weight:500}
+    .tl-monto.pending{color:var(--text3)}
+    .tl-sub{font-size:11px;color:var(--text3);margin-top:2px}
+    .tl-dias-pill{font-size:10px;background:var(--bg3);border-radius:20px;padding:2px 8px;color:var(--text2);margin-top:5px;display:inline-flex;align-items:center;gap:4px}
+    .tl-dias-pill.activo{background:var(--orange-bg);color:var(--orange)}
+
+    /* ── Gastos list ── */
+    .gastos-list{padding:0 20px;display:flex;flex-direction:column;gap:7px}
+    .gasto-item{background:var(--bg2);border-radius:var(--r-md);padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);cursor:pointer}
+    .gasto-item:active{background:var(--bg3)}
+    .g-ic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .g-ic i{font-size:15px}
+    .g-body{flex:1;min-width:0}
+    .g-cat{font-size:12px;font-weight:500}
+    .g-nota{font-size:11px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .g-right{text-align:right;flex-shrink:0}
+    .g-monto{font-size:13px;font-weight:500}
+    .g-quien{font-size:10px;color:var(--text3);margin-top:2px}
+    .g-foto{font-size:10px;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:3px;justify-content:flex-end}
+
+    /* ── Nuevo auto steps ── */
+    .steps{display:flex;align-items:center;padding:0 20px 16px}
+    .step{display:flex;align-items:center;gap:6px;flex:1}
+    .step-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0}
+    .step-dot.done{background:var(--text1);color:#fff}
+    .step-dot.active{background:var(--text1);color:#fff}
+    .step-dot.pending{background:var(--border);color:var(--text3)}
+    .step-label{font-size:11px;font-weight:500;color:var(--text3)}
+    .step.active .step-label{color:var(--text1)}
+    .step-line{flex:1;height:1.5px;background:var(--border);margin:0 4px}
+    .step-line.done{background:var(--text1)}
+
+    /* ── Tipo toggle ── */
+    .tipo-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .tt-btn{background:var(--bg2);border-radius:var(--r-md);padding:14px 10px;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;box-shadow:var(--shadow);font-family:var(--font)}
+    .tt-btn.sel{background:var(--text1)}
+    .tt-ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center}
+    .tt-ic i{font-size:19px}
+    .tt-name{font-size:12px;font-weight:500;color:var(--text3)}
+    .tt-desc{font-size:10px;color:var(--text3);line-height:1.3}
+    .tt-btn.sel .tt-name{color:#fff}
+    .tt-btn.sel .tt-desc{color:rgba(255,255,255,0.45)}
+    .tt-btn.sel .tt-ic{background:rgba(255,255,255,0.12)}
+    .tt-btn.sel .tt-ic i{color:#fff}
+
+    /* ── Fecha cards ── */
+    .fecha-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .fecha-card{background:var(--bg2);border-radius:var(--r-md);padding:12px 14px;box-shadow:var(--shadow)}
+    .fecha-card.pendiente{background:transparent;border:1.5px dashed var(--border)}
+    .fecha-lbl{font-size:11px;color:var(--text3);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+    .fecha-lbl i{font-size:13px}
+    .fecha-inp{width:100%;border:none;background:none;font-size:14px;font-weight:500;color:var(--text1);outline:none;font-family:var(--font)}
+
+    /* ── Monto big ── */
+    .monto-card{background:var(--bg2);border-radius:var(--r-lg);padding:16px;box-shadow:var(--shadow)}
+    .monto-lbl{font-size:12px;color:var(--text3);text-align:center;margin-bottom:4px}
+    .monto-wrap{display:flex;align-items:baseline;justify-content:center;gap:4px}
+    .monto-prefix{font-size:22px;font-weight:500;color:var(--text3)}
+    .monto-inp{font-size:36px;font-weight:500;color:var(--text1);border:none;background:none;width:190px;text-align:center;outline:none;font-family:var(--font)}
+    .monto-inp::placeholder{color:#ddd}
+    .monto-div{height:0.5px;background:var(--border);margin:12px 0}
+    .nota-inp{width:100%;border:none;background:none;font-size:14px;color:var(--text1);outline:none;resize:none;min-height:40px;font-family:var(--font)}
+    .nota-inp::placeholder{color:var(--text3)}
+
+    /* ── Foto ── */
+    .foto-ph{height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--border);border-radius:var(--r-lg);cursor:pointer;background:var(--bg2)}
+    .foto-ph:active{background:var(--bg3)}
+    .foto-ic{width:40px;height:40px;border-radius:11px;background:var(--bg);display:flex;align-items:center;justify-content:center}
+    .foto-ic i{font-size:20px;color:var(--text3)}
+    .foto-lbl{font-size:13px;font-weight:500;color:var(--text3)}
+    .foto-sub{font-size:11px;color:var(--text3)}
+    .foto-taken{border-radius:var(--r-lg);overflow:hidden;height:120px;display:none;position:relative}
+    .foto-taken img{width:100%;height:100%;object-fit:cover}
+    .foto-retake{position:absolute;bottom:8px;right:10px;background:rgba(0,0,0,0.6);border:none;border-radius:20px;padding:5px 12px;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:var(--font)}
+    .foto-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .foto-opt{background:var(--bg2);border-radius:12px;padding:11px;border:none;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:var(--shadow);font-family:var(--font)}
+    .foto-opt i{font-size:17px;color:var(--text2)}
+    .foto-opt span{font-size:13px}
+
+    /* ── Quien btns ── */
+    .quien-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .quien-btn{background:var(--bg2);border-radius:var(--r-md);padding:13px;border:none;cursor:pointer;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);font-family:var(--font)}
+    .quien-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+    .quien-av.j{background:var(--blue-bg);color:var(--blue)}
+    .quien-av.e{background:var(--green-bg);color:var(--green)}
+    .quien-name{font-size:13px;font-weight:500;text-align:left}
+    .quien-sub{font-size:10px;color:var(--text3);margin-top:1px;text-align:left}
+    .quien-btn.sel{background:var(--text1)}
+    .quien-btn.sel .quien-name,.quien-btn.sel .quien-sub{color:#fff}
+    .quien-btn.sel .quien-av{background:rgba(255,255,255,0.15)!important;color:#fff!important}
+
+    /* ── Info note ── */
+    .info-note{background:var(--blue-bg);border-radius:10px;padding:9px 12px;font-size:11px;color:var(--blue);line-height:1.5;display:flex;align-items:flex-start;gap:7px;margin-top:8px}
+    .info-note i{font-size:14px;flex-shrink:0;margin-top:1px}
+    .warn-note{background:var(--orange-bg);border-radius:10px;padding:9px 12px;font-size:11px;color:var(--orange);line-height:1.5;display:flex;align-items:flex-start;gap:7px}
+    .warn-note i{font-size:14px;flex-shrink:0;margin-top:1px}
+
+    /* ── Resumen dark card ── */
+    .resumen-card{background:var(--text1);border-radius:var(--r-lg);padding:16px}
+    .res-title{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:12px}
+    .res-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid rgba(255,255,255,0.08)}
+    .res-row:last-child{border-bottom:none}
+    .res-label{color:rgba(255,255,255,0.5)}
+    .res-val{font-weight:500;color:#fff}
+    .res-val.pos{color:#97C459}
+    .res-chips{display:flex;gap:6px;margin-top:12px}
+    .res-chip{flex:1;background:rgba(255,255,255,0.08);border-radius:10px;padding:8px;text-align:center}
+    .res-chip-lbl{font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:3px}
+    .res-chip-val{font-size:12px;font-weight:500;color:#fff}
+
+    /* ── Caja ── */
+    .socio-hero{border-radius:var(--r-lg);padding:14px;margin-bottom:8px}
+    .socio-hero.j{background:var(--blue-bg)}
+    .socio-hero.e{background:var(--green-bg)}
+    .sh-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+    .sh-name{font-size:13px;font-weight:500}
+    .socio-hero.j .sh-name{color:var(--blue)}
+    .socio-hero.e .sh-name{color:var(--green)}
+    .sh-total{font-size:22px;font-weight:500;text-align:right}
+    .socio-hero.j .sh-total{color:var(--blue)}
+    .socio-hero.e .sh-total{color:var(--green)}
+    .sh-total-lbl{font-size:10px;text-align:right;color:var(--text3)}
+    .sh-pills{display:flex;gap:6px}
+    .sh-pill{flex:1;background:rgba(255,255,255,0.55);border-radius:8px;padding:8px 10px}
+    .sh-pill-lbl{font-size:10px;margin-bottom:2px;color:var(--text3)}
+    .sh-pill-val{font-size:14px;font-weight:500}
+    .socio-hero.j .sh-pill-val{color:var(--blue)}
+    .socio-hero.e .sh-pill-val{color:var(--green)}
+    .acciones-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    .acc-btn{padding:11px 4px;border-radius:10px;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--font)}
+    .acc-btn i{font-size:20px}
+    .acc-btn span{font-size:10px;font-weight:500;text-align:center;line-height:1.3}
+    .acc-btn.liq{background:var(--green-bg)}.acc-btn.liq i,.acc-btn.liq span{color:var(--green)}
+    .acc-btn.ret{background:var(--red-bg)}.acc-btn.ret i,.acc-btn.ret span{color:var(--red)}
+    .acc-btn.prest{background:var(--purple-bg)}.acc-btn.prest i,.acc-btn.prest span{color:var(--purple)}
+
+    /* ── Simulador ── */
+    .sim-hero{background:var(--text1);border-radius:var(--r-lg);padding:18px;margin:0 20px 14px}
+    .sim-gan{font-size:30px;font-weight:500}
+    .sim-gan.pos{color:#97C459}
+    .sim-gan.neg{color:#F09595}
+    .sim-gan.zero{color:rgba(255,255,255,0.3)}
+    .pv-card{background:var(--bg2);border-radius:var(--r-lg);padding:16px;margin:0 20px 14px;box-shadow:var(--shadow)}
+    .pv-lbl{font-size:12px;color:var(--text3);text-align:center;margin-bottom:4px}
+    .pv-wrap{display:flex;align-items:baseline;justify-content:center;gap:4px}
+    .pv-prefix{font-size:20px;font-weight:500;color:var(--text3)}
+    .pv-inp{font-size:34px;font-weight:500;color:var(--text1);border:none;background:none;width:200px;text-align:center;outline:none;font-family:var(--font)}
+    .pv-inp::placeholder{color:#ddd}
+    .pv-presets{display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+    .pv-preset{background:var(--bg3);border:none;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:500;color:var(--text2);cursor:pointer;font-family:var(--font)}
+    .pv-preset:active{background:var(--border)}
+    .sim-costos{background:var(--bg2);border-radius:var(--r-lg);padding:14px 16px;margin:0 20px 14px;box-shadow:var(--shadow)}
+    .sim-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--bg3)}
+    .sim-row:last-child{border-bottom:none}
+    .sim-row-left{display:flex;align-items:center;gap:8px}
+    .sim-row-ic{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+    .sim-row-ic i{font-size:13px}
+    .sim-row-lbl{font-size:12px;color:var(--text3)}
+    .sim-row-lbl.sim{color:var(--orange)}
+    .sim-row-val{font-size:13px;font-weight:500}
+    .sim-row-val.sim{color:var(--orange)}
+    .add-sim-btn{width:100%;padding:11px;background:var(--bg3);border:1.5px dashed var(--border);border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;color:var(--text3);margin-top:8px;font-family:var(--font)}
+    .gasto-sim-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid var(--bg3)}
+    .gsi-del{width:24px;height:24px;border-radius:50%;background:var(--red-bg);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .gsi-del i{font-size:12px;color:var(--red)}
+
+    /* ── Stats ── */
+    .bar-row{margin-bottom:12px}
+    .bar-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+    .bar-track{height:7px;background:var(--bg3);border-radius:4px;overflow:hidden;position:relative}
+    .bar-fill{height:100%;border-radius:4px;background:var(--text1);transition:width 0.4s}
+    .bar-fill.under{background:var(--red)}
+    .cat-item{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .cat-ic{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+    .cat-ic i{font-size:13px}
+    .cat-body{flex:1}
+    .cat-track{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:4px}
+    .cat-fill{height:100%;border-radius:3px;background:var(--text1)}
+
+    /* ── Movimientos ── */
+    .mov-item{display:flex;align-items:center;gap:9px;padding:9px;background:var(--bg3);border-radius:9px;margin-bottom:6px}
+    .mov-ic{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .mov-ic i{font-size:15px}
+    .mov-ic.ven{background:var(--green-bg)}.mov-ic.ven i{color:var(--green)}
+    .mov-ic.ret{background:var(--red-bg)}.mov-ic.ret i{color:var(--red)}
+    .mov-ic.pag{background:var(--purple-bg)}.mov-ic.pag i{color:var(--purple)}
+    .mov-body{flex:1;min-width:0}
+    .mov-n{font-size:12px;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mov-s{font-size:10px;color:var(--text3);margin-top:1px}
+    .mov-a{font-size:12px;font-weight:500;flex-shrink:0}
+    .mov-a.pos{color:var(--green)}.mov-a.neg{color:var(--red)}
+
+    /* ── Fuente toggle (nuevo auto) ── */
+    .fuente-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .ft-btn{background:var(--bg2);border-radius:var(--r-md);padding:14px 10px;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;box-shadow:var(--shadow);font-family:var(--font)}
+    .ft-btn.sel{background:var(--text1)}
+    .ft-ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center}
+    .ft-ic i{font-size:19px}
+    .ft-name{font-size:12px;font-weight:500;color:var(--text3)}
+    .ft-desc{font-size:10px;color:var(--text3);line-height:1.3}
+    .ft-btn.sel .ft-name{color:#fff}
+    .ft-btn.sel .ft-desc{color:rgba(255,255,255,0.4)}
+    .ft-btn.sel .ft-ic{background:rgba(255,255,255,0.12)}
+    .ft-btn.sel .ft-ic i{color:#fff}
+    .aporte-card{border-radius:12px;padding:12px}
+    .aporte-card.j{background:var(--blue-bg)}
+    .aporte-card.e{background:var(--green-bg)}
+    .aporte-lbl{font-size:11px;font-weight:500;margin-bottom:6px}
+    .aporte-card.j .aporte-lbl{color:var(--blue)}
+    .aporte-card.e .aporte-lbl{color:var(--green)}
+    .aporte-inp{width:100%;border:none;background:rgba(255,255,255,0.6);border-radius:8px;padding:8px 10px;font-size:14px;font-weight:500;outline:none;font-family:var(--font)}
+    .aporte-card.j .aporte-inp{color:var(--blue)}
+    .aporte-card.e .aporte-inp{color:var(--green)}
+    .prestamo-on{background:var(--purple-bg);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;margin-top:8px}
+    .prestamo-on-ic{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .prestamo-on-ic i{font-size:18px;color:var(--purple)}
+    .prestamo-on-body{flex:1}
+    .prestamo-on-name{font-size:13px;font-weight:500;color:var(--purple)}
+    .prestamo-on-sub{font-size:11px;color:#534AB7;margin-top:2px}
+    .prestamo-on-val{font-size:15px;font-weight:500;color:var(--purple)}
+
+    /* ── Dist toggle ── */
+    .dist-toggle{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+    .dt-btn{background:var(--bg3);border-radius:10px;padding:10px 6px;border:none;cursor:pointer;text-align:center;font-size:11px;font-weight:500;color:var(--text3);font-family:var(--font)}
+    .dt-btn.sel{background:var(--text1);color:#fff}
+
+    /* ── Nav buttons (steps) ── */
+    .nav-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px;margin-top:4px}
+
+    /* ── Filtros ── */
+    .filtros{display:flex;gap:6px;padding:0 20px 12px;overflow-x:auto}
+    .filtros::-webkit-scrollbar{display:none}
+    .filtro-btn{padding:6px 14px;border-radius:20px;border:0.5px solid var(--border);background:var(--bg2);font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap;font-family:var(--font)}
+    .filtro-btn.active{background:var(--text1);color:#fff;border-color:var(--text1)}
+
+    /* ── Misc ── */
+    .hidden{display:none!important}
+    .text-green{color:var(--green)}
+    .text-red{color:var(--red)}
+    .text-muted{color:var(--text3)}
+    .fw-500{font-weight:500}
+    .divider{height:0.5px;background:var(--border);margin:12px 0}
+    .tc-preview{background:var(--bg3);border-radius:10px;padding:10px 12px;margin-top:8px;display:flex;justify-content:space-between;align-items:center}
+    .tc-lbl{font-size:11px;color:var(--text3)}
+    .tc-val{font-size:14px;font-weight:500}
+    .user-avatar{width:30px;height:30px;border-radius:50%;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--blue);cursor:pointer;border:none;font-family:var(--font)}
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     BOTTOM NAV (global)
+     ============================================================ -->
+<nav class="bottomnav" id="bottomnav">
+  <button class="bn active" onclick="goScreen('dashboard')" id="bn-dashboard"><i class="ti ti-home"></i><span>Inicio</span></button>
+  <button class="bn" onclick="goScreen('autos')" id="bn-autos"><i class="ti ti-car"></i><span>Autos</span></button>
+  <button class="bn" onclick="goScreen('gasto')" id="bn-gasto"><i class="ti ti-receipt"></i><span>Gasto</span></button>
+  <button class="bn" onclick="goScreen('caja')" id="bn-caja"><i class="ti ti-wallet"></i><span>Caja</span></button>
+  <button class="bn" onclick="goScreen('stats')" id="bn-stats"><i class="ti ti-chart-bar"></i><span>Stats</span></button>
+</nav>
+
+<!-- FAB -->
+<button class="fab" id="fab" onclick="goScreen('gasto')" style="display:none"><i class="ti ti-plus"></i></button>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ============================================================
+     SCREEN: DASHBOARD
+     ============================================================ -->
+<div class="screen active" id="screen-dashboard">
+  <div style="padding:14px 20px 0;display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:15px;font-weight:500" id="db-time"></div>
+    <button class="user-avatar" id="db-avatar" onclick="showLogout()"></button>
+  </div>
+  <div class="greeting">
+    <div class="greet-sub" id="db-fecha"></div>
+    <div class="greet-name" id="db-nombre">Hola</div>
+  </div>
+  <div class="section">
+    <div class="stats-grid" id="db-stats"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+  <div class="sec-hd">
+    <h3>Autos activos</h3>
+    <button class="sec-link" onclick="goScreen('autos')">Ver todos</button>
+  </div>
+  <div id="db-activos"><div class="loading"><div class="spinner"></div></div></div>
+  <div class="sec-hd" style="margin-top:16px"><h3>Vendidos</h3></div>
+  <div id="db-vendidos"></div>
+  <div class="sec-hd" style="margin-top:16px">
+    <h3>Mi capital</h3>
+    <button class="sec-link" onclick="goScreen('caja')">Ver detalle</button>
+  </div>
+  <div class="section"><div class="cap-strip" id="db-capital"><div class="loading"><div class="spinner"></div></div></div></div>
+  <div class="section">
+    <div class="prestamo-card">
+      <div class="pc-hd">
+        <div class="pc-title"><i class="ti ti-coin"></i>Préstamo (papá)</div>
+        <div style="font-size:13px;font-weight:500;color:var(--purple)">$200,000</div>
+      </div>
+      <div class="pc-slots" id="db-slots"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ============================================================
+     SCREEN: AUTOS
+     ============================================================ -->
+<div class="screen" id="screen-autos">
+  <div class="topbar">
+    <div class="topbar-title">Autos</div>
+    <button class="btn btn-primary" style="padding:8px 14px;font-size:13px" onclick="goScreen('nuevo-auto')">
+      <i class="ti ti-plus"></i>Nuevo
+    </button>
+  </div>
+  <div class="filtros">
+    <button class="filtro-btn active" onclick="filtrarAutos('todos',this)">Todos</button>
+    <button class="filtro-btn" onclick="filtrarAutos('activos',this)">Activos</button>
+    <button class="filtro-btn" onclick="filtrarAutos('taller',this)">Taller</button>
+    <button class="filtro-btn" onclick="filtrarAutos('en_venta',this)">En venta</button>
+    <button class="filtro-btn" onclick="filtrarAutos('vendido',this)">Vendidos</button>
+  </div>
+  <div id="autos-list-full"><div class="loading"><div class="spinner"></div></div></div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ============================================================
+     SCREEN: DETALLE AUTO
+     ============================================================ -->
+<div class="screen" id="screen-detalle">
+  <!-- Hero -->
+  <div id="det-hero" style="background:var(--text1);padding:14px 20px 20px;position:relative">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <button class="back-btn" style="background:rgba(255,255,255,0.12);box-shadow:none" onclick="goBack()">
+        <i class="ti ti-arrow-left" style="color:#fff"></i>
+      </button>
+      <span id="det-pill"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center">
+        <i class="ti ti-car" style="font-size:28px;color:#fff"></i>
+      </div>
+      <div>
+        <div style="font-size:20px;font-weight:500;color:#fff" id="det-titulo"></div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:3px" id="det-sub"></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px" id="det-stats"></div>
+  </div>
+
+  <!-- Timeline -->
+  <div style="padding:16px 20px 8px;font-size:12px;font-weight:500;color:var(--text3)">Etapas</div>
+  <div style="padding:0 20px" class="timeline" id="det-timeline"></div>
+
+  <!-- Aportaciones -->
+  <div style="padding:16px 20px 8px;font-size:12px;font-weight:500;color:var(--text3)">Aportaciones y distribución</div>
+  <div style="padding:0 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="det-aportes"></div>
+
+  <!-- Gastos -->
+  <div style="padding:16px 20px 8px;font-size:12px;font-weight:500;color:var(--text3)">Gastos registrados</div>
+  <div class="gastos-list" id="det-gastos"></div>
+
+  <!-- Resumen -->
+  <div style="padding:16px 20px 8px;font-size:12px;font-weight:500;color:var(--text3)">Resumen financiero</div>
+  <div class="section" id="det-resumen"></div>
+
+  <!-- Acciones -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px;margin-bottom:4px">
+    <button class="btn btn-primary" onclick="goScreenWithAuto('gasto')"><i class="ti ti-receipt"></i>Agregar gasto</button>
+    <button class="btn btn-secondary" onclick="goScreenWithAuto('simulador')"><i class="ti ti-calculator"></i>Simular</button>
+  </div>
+  <div style="padding:8px 20px 20px" id="det-liq-btn"></div>
+</div>
+
+<!-- ============================================================
+     SCREEN: NUEVO AUTO (3 pasos)
+     ============================================================ -->
+<div class="screen" id="screen-nuevo-auto">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
+    <div class="topbar-title">Nuevo auto</div>
+  </div>
+  <div class="steps" id="na-steps">
+    <div class="step active" id="na-s1"><div class="step-dot active">1</div><div class="step-label">Datos</div></div>
+    <div class="step-line" id="na-l1"></div>
+    <div class="step pending" id="na-s2"><div class="step-dot pending">2</div><div class="step-label">Costos</div></div>
+    <div class="step-line" id="na-l2"></div>
+    <div class="step pending" id="na-s3"><div class="step-dot pending">3</div><div class="step-label">Capital</div></div>
+  </div>
+
+  <!-- Paso 1 -->
+  <div class="subview active" id="na-view-1">
+    <div class="section">
+      <div class="sec-label">Información del auto</div>
+      <div class="card">
+        <div class="field-row field">
+          <div class="field"><label>Marca</label><input type="text" id="na-marca" placeholder="NISSAN"></div>
+          <div class="field"><label>Año</label><input type="number" id="na-anio" placeholder="2020"></div>
+        </div>
+        <div class="field"><label>Modelo y color</label><input type="text" id="na-modelo" placeholder="SENTRA BLANCO"></div>
+        <div class="field"><label>VIN / Número de serie</label><input type="text" id="na-vin" placeholder="Ej: 3N1AB7AP..."></div>
+        <div class="field-row field">
+          <div class="field"><label>Millas (MI)</label><input type="number" id="na-millas" placeholder="85,000"></div>
+          <div class="field"><label>Fecha de compra</label><input type="date" id="na-fecha"></div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-label">Distribución de ganancia</div>
+      <div class="card">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px">¿Cómo se reparte la ganancia de este auto?</div>
+        <div class="dist-toggle">
+          <button class="dt-btn sel" onclick="selDist(this,'50_50')">50 / 50</button>
+          <button class="dt-btn" onclick="selDist(this,'100_joseph')">100% Joseph</button>
+          <button class="dt-btn" onclick="selDist(this,'100_emmanuel')">100% Emmanuel</button>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5" id="na-dist-note">La ganancia se divide en partes iguales.</div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-secondary" onclick="goBack()"><i class="ti ti-arrow-left"></i>Cancelar</button>
+      <button class="btn btn-primary" onclick="naGoStep(2)">Costos<i class="ti ti-arrow-right"></i></button>
+    </div>
+  </div>
+
+  <!-- Paso 2 -->
+  <div class="subview" id="na-view-2">
+    <div class="section">
+      <div class="sec-label">Compra en EUA</div>
+      <div class="card">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.5">Ingresa el precio en dólares y cuánto pagaste en pesos al banco. El tipo de cambio se calcula automáticamente.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <div style="background:var(--blue-bg);border-radius:12px;padding:12px">
+            <div style="font-size:10px;font-weight:500;color:var(--blue);margin-bottom:4px">USD — Precio del dealer</div>
+            <input style="width:100%;border:none;background:rgba(255,255,255,0.6);border-radius:8px;padding:8px 10px;font-size:15px;font-weight:500;color:var(--blue);outline:none;font-family:var(--font)" type="number" id="na-usd" placeholder="2,500" oninput="naCalcDivisa()">
+          </div>
+          <div style="background:var(--green-bg);border-radius:12px;padding:12px">
+            <div style="font-size:10px;font-weight:500;color:var(--green);margin-bottom:4px">MXN — Pagué al banco</div>
+            <input style="width:100%;border:none;background:rgba(255,255,255,0.6);border-radius:8px;padding:8px 10px;font-size:15px;font-weight:500;color:var(--green);outline:none;font-family:var(--font)" type="number" id="na-mxn" placeholder="46,250" oninput="naCalcDivisa()">
+          </div>
+        </div>
+        <div style="background:var(--text1);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center"><i class="ti ti-calculator" style="font-size:15px;color:#fff"></i></div>
+            <div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.4)">Tipo de cambio real</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.3)">MXN ÷ USD automático</div>
+            </div>
+          </div>
+          <div style="font-size:16px;font-weight:500;color:#fff" id="na-tc-resultado">Ingresa ambos</div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-label">Costos de importación</div>
+      <div class="card">
+        <div class="field"><label>Transporte USA–Frontera (USD)</label><input type="number" id="na-trans-usa" placeholder="800" oninput="naCalcTotal()"></div>
+        <div class="field"><label>Importación / Legalización (MXN)</label><input type="number" id="na-imp" placeholder="28,000" oninput="naCalcTotal()"></div>
+        <div class="field"><label>Transporte Frontera–Tepic (MXN)</label><input type="number" id="na-trans-tep" placeholder="15,500" value="15500" oninput="naCalcTotal()"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-label">Precio de venta estimado</div>
+      <div class="card">
+        <div class="field" style="margin-bottom:0"><label>Precio estimado (MXN)</label><input type="number" id="na-pventa" placeholder="148,000" oninput="naCalcTotal()"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-label">Resumen de costos</div>
+      <div class="card" id="na-resumen-costos" style="font-size:13px"></div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-secondary" onclick="naGoStep(1)"><i class="ti ti-arrow-left"></i>Atrás</button>
+      <button class="btn btn-primary" onclick="naGoStep(3)">Capital<i class="ti ti-arrow-right"></i></button>
+    </div>
+  </div>
+
+  <!-- Paso 3 -->
+  <div class="subview" id="na-view-3">
+    <div class="section">
+      <div class="sec-label">¿Cómo se financia este auto?</div>
+      <div class="fuente-toggle">
+        <button class="ft-btn sel" id="na-ft-prestamo" onclick="naSetFuente('prestamo')">
+          <div class="ft-ic" style="background:var(--purple-bg)"><i class="ti ti-coin" style="color:var(--purple)"></i></div>
+          <div class="ft-name">Con préstamo</div>
+          <div class="ft-desc">$100k del fondo + aportaciones</div>
+        </button>
+        <button class="ft-btn" id="na-ft-propio" onclick="naSetFuente('propio')">
+          <div class="ft-ic" style="background:var(--green-bg)"><i class="ti ti-wallet" style="color:var(--green)"></i></div>
+          <div class="ft-name">Solo capital propio</div>
+          <div class="ft-desc">Sin usar el préstamo</div>
+        </button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-label">Aportaciones</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="aporte-card j">
+          <div class="aporte-lbl"><i class="ti ti-user" style="font-size:11px"></i> Joseph</div>
+          <input class="aporte-inp" type="number" placeholder="0" id="na-ap-j" oninput="naCalcResumen()">
+        </div>
+        <div class="aporte-card e">
+          <div class="aporte-lbl"><i class="ti ti-user" style="font-size:11px"></i> Emmanuel</div>
+          <input class="aporte-inp" type="number" placeholder="0" id="na-ap-e" oninput="naCalcResumen()">
+        </div>
+      </div>
+      <div id="na-prestamo-block">
+        <div class="prestamo-on">
+          <div class="prestamo-on-ic"><i class="ti ti-coin"></i></div>
+          <div class="prestamo-on-body">
+            <div class="prestamo-on-name">Préstamo (papá)</div>
+            <div class="prestamo-on-sub">Slot se asigna al guardar</div>
+          </div>
+          <div class="prestamo-on-val">$100,000</div>
+        </div>
+      </div>
+      <div id="na-sinprestamo-block" class="hidden">
+        <div class="info-note" style="background:var(--green-bg);color:var(--green)">
+          <i class="ti ti-check-circle" style="color:var(--green)"></i>
+          Sin préstamo — el slot queda disponible para otro auto.
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-label">Resumen antes de guardar</div>
+      <div class="resumen-card" id="na-resumen-final">
+        <div class="res-title">Resumen del auto</div>
+        <div class="res-row"><span class="res-label">Costo estimado</span><span class="res-val" id="na-r-costo">—</span></div>
+        <div class="res-row"><span class="res-label">Precio venta estimado</span><span class="res-val" id="na-r-venta">—</span></div>
+        <div class="res-row"><span class="res-label">Ganancia estimada</span><span class="res-val pos" id="na-r-gan">—</span></div>
+        <div class="res-chips">
+          <div class="res-chip"><div class="res-chip-lbl">Joseph</div><div class="res-chip-val" id="na-rc-j">—</div></div>
+          <div class="res-chip"><div class="res-chip-lbl">Emmanuel</div><div class="res-chip-val" id="na-rc-e">—</div></div>
+          <div class="res-chip" id="na-rc-p"><div class="res-chip-lbl">Préstamo</div><div class="res-chip-val">$100k</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button class="btn btn-secondary" onclick="naGoStep(2)"><i class="ti ti-arrow-left"></i>Atrás</button>
+      <button class="btn btn-green" onclick="naGuardar()" id="na-guardar-btn"><i class="ti ti-check"></i>Guardar auto</button>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN: GASTO
+     ============================================================ -->
+<div class="screen" id="screen-gasto">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
+    <div class="topbar-title">Registrar gasto</div>
+  </div>
+  <div class="section">
+    <div class="sec-label">Auto</div>
+    <button class="selector-btn" onclick="openSheet('auto-sheet')">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="sel-ic" id="g-auto-ic" style="background:var(--blue-bg)"><i class="ti ti-car" style="color:var(--blue)"></i></div>
+        <div><div class="sel-name ph" id="g-auto-name">Seleccionar auto...</div><div class="sel-desc" id="g-auto-desc"></div></div>
+      </div>
+      <i class="ti ti-chevron-down" style="font-size:18px;color:var(--text3)"></i>
+    </button>
+  </div>
+  <div class="section">
+    <div class="sec-label">Tipo de registro</div>
+    <div class="tipo-toggle">
+      <button class="tt-btn" id="g-tt-etapa" onclick="gSetTipo('etapa')">
+        <div class="tt-ic" style="background:var(--purple-bg)"><i class="ti ti-route" style="color:var(--purple)"></i></div>
+        <div class="tt-name">Etapa del proceso</div>
+        <div class="tt-desc">Compra, transporte, importación</div>
+      </button>
+      <button class="tt-btn sel" id="g-tt-op" onclick="gSetTipo('operacion')">
+        <div class="tt-ic"><i class="ti ti-tool"></i></div>
+        <div class="tt-name">Gasto de operación</div>
+        <div class="tt-desc">Mecánica, detallado, accesorios...</div>
+      </button>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-label" id="g-cat-label">Categoría</div>
+    <button class="selector-btn" onclick="openSheet('cat-sheet')">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="sel-ic" id="g-cat-ic" style="background:var(--bg3)"><i class="ti ti-layout-grid" style="color:var(--text3)" id="g-cat-ic-i"></i></div>
+        <div><div class="sel-name ph" id="g-cat-name">Seleccionar...</div><div class="sel-desc" id="g-cat-desc"></div></div>
+      </div>
+      <i class="ti ti-chevron-down" style="font-size:18px;color:var(--text3)"></i>
+    </button>
+  </div>
+  <div class="section">
+    <div class="sec-label">Fechas</div>
+    <div class="fecha-row">
+      <div class="fecha-card">
+        <div class="fecha-lbl"><i class="ti ti-coin"></i>Fecha de pago</div>
+        <input class="fecha-inp" type="date" id="g-fecha">
+      </div>
+      <div class="fecha-card pendiente" id="g-fecha-fin-card">
+        <div class="fecha-lbl"><i class="ti ti-flag"></i>Finalización</div>
+        <div style="font-size:12px;color:var(--text3)">Se completa después</div>
+      </div>
+    </div>
+    <div class="info-note hidden" id="g-etapa-note">
+      <i class="ti ti-info-circle"></i>La fecha de finalización la registras desde el detalle del auto.
+    </div>
+  </div>
+  <div class="section">
+    <div class="monto-card">
+      <div class="monto-lbl">Monto pagado</div>
+      <div class="monto-wrap">
+        <span class="monto-prefix">$</span>
+        <input class="monto-inp" type="number" inputmode="decimal" placeholder="0" id="g-monto">
+      </div>
+      <div class="monto-div"></div>
+      <textarea class="nota-inp" id="g-nota" placeholder="Nota opcional..." rows="2"></textarea>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-label">Comprobante <span style="font-size:10px;font-weight:400;color:var(--text3)">· opcional</span></div>
+    <div id="g-foto-ph" class="foto-ph" onclick="document.getElementById('g-foto-input').click()">
+      <div class="foto-ic"><i class="ti ti-camera"></i></div>
+      <div class="foto-lbl">Agregar foto</div>
+      <div class="foto-sub">Ticket, factura o referencia</div>
+    </div>
+    <div id="g-foto-tk" class="foto-taken">
+      <img id="g-foto-preview" src="" alt="Comprobante">
+      <button class="foto-retake" onclick="gQuitarFoto()"><i class="ti ti-refresh"></i>Cambiar</button>
+    </div>
+    <input type="file" id="g-foto-input" accept="image/*" capture="environment" style="display:none" onchange="gOnFoto(this)">
+    <div class="foto-opts">
+      <button class="foto-opt" onclick="document.getElementById('g-foto-input').click()"><i class="ti ti-camera"></i><span>Cámara</span></button>
+      <button class="foto-opt" onclick="document.getElementById('g-galeria').click()"><i class="ti ti-photo"></i><span>Galería</span></button>
+    </div>
+    <input type="file" id="g-galeria" accept="image/*" style="display:none" onchange="gOnFoto(this)">
+  </div>
+  <div class="section">
+    <div class="sec-label">¿Quién pagó?</div>
+    <div class="quien-row">
+      <button class="quien-btn" id="g-qj" onclick="gSelQ('j')">
+        <div class="quien-av j">JO</div>
+        <div><div class="quien-name">Joseph</div><div class="quien-sub" id="g-qj-sub"></div></div>
+      </button>
+      <button class="quien-btn" id="g-qe" onclick="gSelQ('e')">
+        <div class="quien-av e">EM</div>
+        <div><div class="quien-name">Emmanuel</div><div class="quien-sub" id="g-qe-sub"></div></div>
+      </button>
+    </div>
+  </div>
+  <div class="section">
+    <button class="btn btn-primary btn-full" onclick="gGuardar()" id="g-guardar-btn">
+      <i class="ti ti-check"></i>Guardar registro
+    </button>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ============================================================
+     SCREEN: CAJA
+     ============================================================ -->
+<div class="screen" id="screen-caja">
+  <div class="topbar" style="justify-content:space-between">
+    <div class="topbar-title">Caja del negocio</div>
+  </div>
+  <div class="section">
+    <div class="socio-hero j" id="caja-j">
+      <div class="sh-top">
+        <div class="sh-name"><i class="ti ti-user" style="font-size:13px;margin-right:4px"></i>Joseph</div>
+        <div><div class="sh-total-lbl">Total en negocio</div><div class="sh-total" id="cj-total">—</div></div>
+      </div>
+      <div class="sh-pills">
+        <div class="sh-pill"><div class="sh-pill-lbl">Dinero metido</div><div class="sh-pill-val" id="cj-inv">—</div></div>
+        <div class="sh-pill"><div class="sh-pill-lbl">Ganancia acum.</div><div class="sh-pill-val" id="cj-gan">—</div></div>
+        <div class="sh-pill"><div class="sh-pill-lbl">Retirado</div><div class="sh-pill-val" id="cj-ret">—</div></div>
+      </div>
+    </div>
+    <div class="socio-hero e" id="caja-e">
+      <div class="sh-top">
+        <div class="sh-name"><i class="ti ti-user" style="font-size:13px;margin-right:4px"></i>Emmanuel</div>
+        <div><div class="sh-total-lbl">Total en negocio</div><div class="sh-total" id="ce-total">—</div></div>
+      </div>
+      <div class="sh-pills">
+        <div class="sh-pill"><div class="sh-pill-lbl">Dinero metido</div><div class="sh-pill-val" id="ce-inv">—</div></div>
+        <div class="sh-pill"><div class="sh-pill-lbl">Ganancia acum.</div><div class="sh-pill-val" id="ce-gan">—</div></div>
+        <div class="sh-pill"><div class="sh-pill-lbl">Retirado</div><div class="sh-pill-val" id="ce-ret">—</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="prestamo-card">
+      <div class="pc-hd">
+        <div class="pc-title"><i class="ti ti-coin"></i>Préstamo (papá)</div>
+        <div style="font-size:13px;font-weight:500;color:var(--purple)">$200,000</div>
+      </div>
+      <div class="pc-slots" id="caja-slots"></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="acciones-grid">
+      <button class="acc-btn liq" onclick="openSheet('liq-sheet')"><i class="ti ti-currency-dollar"></i><span>Liquidar venta</span></button>
+      <button class="acc-btn ret" onclick="openSheet('ret-sheet')"><i class="ti ti-wallet"></i><span>Retirar dinero</span></button>
+      <button class="acc-btn prest" onclick="openSheet('pago-sheet')"><i class="ti ti-arrow-back-up"></i><span>Pagar préstamo</span></button>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-label">Últimos movimientos</div>
+    <div id="caja-movs"></div>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ============================================================
+     SCREEN: STATS
+     ============================================================ -->
+<div class="screen" id="screen-stats">
+  <div class="topbar" style="justify-content:space-between">
+    <div class="topbar-title">Estadísticas</div>
+    <div style="font-size:11px;color:var(--text3)" id="stats-sub"></div>
+  </div>
+  <div class="section">
+    <div class="stats-grid" id="stats-kpis"></div>
+  </div>
+  <div class="section">
+    <div class="sec-label">Estimado vs precio real</div>
+    <div class="card" id="stats-evr"></div>
+  </div>
+  <div class="section">
+    <div class="sec-label">Días por etapa (promedio)</div>
+    <div class="card" id="stats-etapas"></div>
+  </div>
+  <div class="section">
+    <div class="sec-label">Gastos por categoría</div>
+    <div class="card" id="stats-cats"></div>
+  </div>
+  <div class="section">
+    <div class="sec-label">Capital por socio</div>
+    <div class="cap-strip" id="stats-socios"></div>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ============================================================
+     SCREEN: SIMULADOR
+     ============================================================ -->
+<div class="screen" id="screen-simulador">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
+    <div style="flex:1">
+      <div class="topbar-title" id="sim-titulo">Simulador</div>
+      <div style="font-size:11px;color:var(--text3)">Sin cambios reales</div>
+    </div>
+    <span class="pill pill-sim"><i class="ti ti-calculator" style="font-size:10px"></i>Simulación</span>
+  </div>
+
+  <div class="sim-hero">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Ganancia estimada</div>
+        <div class="sim-gan zero" id="sim-gan">Ingresa precio</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:18px;font-weight:500;color:#fff" id="sim-rend">—</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px">rendimiento</div>
+      </div>
+    </div>
+    <div style="height:0.5px;background:rgba(255,255,255,0.1);margin-bottom:12px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="background:rgba(255,255,255,0.07);border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px">Le tocaría a Joseph</div>
+        <div style="font-size:14px;font-weight:500;color:#fff" id="sim-j">—</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.07);border-radius:10px;padding:10px">
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px">Le tocaría a Emmanuel</div>
+        <div style="font-size:14px;font-weight:500;color:#fff" id="sim-e">—</div>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px 10px;margin-top:10px;font-size:10px;color:rgba(255,255,255,0.3);display:flex;align-items:center;gap:5px">
+      <i class="ti ti-info-circle"></i>Solo simulación — no modifica datos reales
+    </div>
+  </div>
+
+  <div class="pv-card">
+    <div class="pv-lbl">¿En cuánto lo venderías?</div>
+    <div class="pv-wrap">
+      <span class="pv-prefix">$</span>
+      <input class="pv-inp" type="number" inputmode="decimal" placeholder="148,000" id="sim-pv" oninput="simCalc()">
+    </div>
+    <div class="pv-presets" id="sim-presets"></div>
+  </div>
+
+  <div class="sim-costos" id="sim-costos"></div>
+
+  <div style="padding:14px 20px">
+    <button class="btn btn-wa btn-full" onclick="simCompartir()">
+      <i class="ti ti-brand-whatsapp"></i>Compartir por WhatsApp
+    </button>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ============================================================
+     SHEETS GLOBALES
+     ============================================================ -->
+
+<!-- Auto selector -->
+<div class="sheet-overlay" id="auto-sheet" onclick="closeSheet('auto-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Seleccionar auto</div>
+    <div id="auto-sheet-list"></div>
+  </div>
+</div>
+
+<!-- Categoría/Etapa -->
+<div class="sheet-overlay" id="cat-sheet" onclick="closeSheet('cat-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="cat-sheet-title">Categoría</div>
+    <div id="cat-sheet-list"></div>
+  </div>
+</div>
+
+<!-- Liquidar venta -->
+<div class="sheet-overlay" id="liq-sheet" onclick="closeSheet('liq-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Liquidar venta</div>
+    <div class="field"><label>Auto vendido</label><select id="liq-auto" onchange="liqCalc()"><option value="">Seleccionar...</option></select></div>
+    <div class="field"><label>Precio de venta real (MXN)</label><input type="number" id="liq-precio" placeholder="148,000" oninput="liqCalc()"></div>
+    <div id="liq-preview" class="hidden">
+      <div class="card" style="margin-bottom:10px;font-size:13px">
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Precio de venta</span><span class="fw-500 text-green" id="lp-venta">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Costo total</span><span class="fw-500" id="lp-costo">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0 4px;border-top:0.5px solid var(--border);margin-top:4px"><span class="fw-500">Ganancia</span><span class="fw-500 text-green" id="lp-gan">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">+ Joseph (inv + ganancia)</span><span class="fw-500" id="lp-j">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">+ Emmanuel (inv + ganancia)</span><span class="fw-500" id="lp-e">—</span></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:8px;text-align:center">Todo queda en la caja para reinvertir</div>
+      </div>
+      <button class="btn btn-green btn-full" onclick="liqEjecutar()"><i class="ti ti-check"></i>Confirmar liquidación</button>
+    </div>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- Retiro -->
+<div class="sheet-overlay" id="ret-sheet" onclick="closeSheet('ret-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Retirar dinero</div>
+    <div class="sec-label" style="margin-bottom:8px">¿Quién retira?</div>
+    <div class="quien-row" style="margin-bottom:12px">
+      <button class="quien-btn sel" id="ret-qj" onclick="retSelQ('j')"><div class="quien-av j">JO</div><div><div class="quien-name">Joseph</div></div></button>
+      <button class="quien-btn" id="ret-qe" onclick="retSelQ('e')"><div class="quien-av e">EM</div><div><div class="quien-name">Emmanuel</div></div></button>
+    </div>
+    <div class="field"><label>Monto (MXN)</label><input type="number" id="ret-monto" placeholder="0" oninput="retCalc()"></div>
+    <div class="field"><label>Concepto</label><input type="text" id="ret-nota" placeholder="Ej: gastos personales..."></div>
+    <div id="ret-preview" class="hidden">
+      <div class="card" style="margin-bottom:10px;font-size:13px">
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Disponible</span><span class="fw-500" id="rp-disp">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Retiro</span><span class="fw-500 text-red" id="rp-ret">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0 4px;border-top:0.5px solid var(--border);margin-top:4px"><span class="fw-500">Queda en negocio</span><span class="fw-500" id="rp-rest">—</span></div>
+      </div>
+      <div id="ret-warn" class="warn-note hidden"><i class="ti ti-alert-triangle"></i>El monto supera tu saldo disponible</div>
+      <button class="btn btn-red btn-full" id="ret-ok-btn" onclick="retEjecutar()"><i class="ti ti-wallet"></i>Confirmar retiro</button>
+    </div>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- Pagar préstamo -->
+<div class="sheet-overlay" id="pago-sheet" onclick="closeSheet('pago-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Pagar préstamo</div>
+    <div class="field"><label>Monto a pagar (MXN)</label><input type="number" id="pago-monto" placeholder="0" oninput="pagoCalc()"></div>
+    <div class="field"><label>Nota</label><input type="text" id="pago-nota" placeholder="Ej: abono enero..."></div>
+    <div id="pago-preview" class="hidden">
+      <div class="card" style="margin-bottom:10px;font-size:13px">
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Deuda actual</span><span class="fw-500" style="color:var(--purple)" id="pp-act">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Pago</span><span class="fw-500 text-red" id="pp-pag">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0 4px;border-top:0.5px solid var(--border);margin-top:4px"><span class="fw-500">Queda por pagar</span><span class="fw-500" style="color:var(--purple)" id="pp-rest">—</span></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center">Este dinero sale del negocio permanentemente</div>
+      </div>
+      <button class="btn btn-purple btn-full" onclick="pagoEjecutar()"><i class="ti ti-arrow-back-up"></i>Confirmar pago</button>
+    </div>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- Simulador: agregar gasto futuro -->
+<div class="sheet-overlay" id="sim-sheet" onclick="closeSheet('sim-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Gasto futuro estimado</div>
+    <div class="field"><label>Concepto</label><input type="text" id="sim-g-nombre" placeholder="Ej: pintura, llantas..."></div>
+    <div class="field"><label>Monto estimado (MXN)</label><input type="number" id="sim-g-monto" placeholder="0"></div>
+    <button class="btn btn-primary btn-full" onclick="simAgregarGasto()"><i class="ti ti-plus"></i>Agregar al simulador</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- Logout confirm -->
+<div class="sheet-overlay" id="logout-sheet" onclick="closeSheet('logout-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Cerrar sesión</div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:16px">¿Quieres cerrar tu sesión?</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-secondary" onclick="closeSheet('logout-sheet',{target:document.getElementById('logout-sheet')})">Cancelar</button>
+      <button class="btn btn-red" onclick="doLogout()"><i class="ti ti-logout"></i>Cerrar sesión</button>
+    </div>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://vxwmheehqqzybucaunkj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_-PB6IaiPNF7TPnKGhPqxMQ_dc4Gd5G5';
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── State ─────────────────────────────────────────────────────
+let sesion = null, socio = null;
+let todosAutos = [], autoActual = null;
+let prevScreen = 'dashboard';
+
+// ── Caja state (en memoria, sincronizado con movimientos_caja) ─
+let cajaState = {
+  jInv:0, jGan:0, jRet:0,
+  eInv:0, eGan:0, eRet:0,
+  prestamo:200000, prestamoPag:0,
+  movs:[]
+};
+
+// ── Data ─────────────────────────────────────────────────────
+const CAT = [
+  {id:'mecanica',name:'Mecánica',desc:'Motor, frenos, suspensión',ic:'ti-engine',bg:'var(--red-bg)',ic_c:'var(--red)'},
+  {id:'carroceria',name:'Carrocería / Pintura',desc:'Golpes, rayones, pintura',ic:'ti-paint',bg:'var(--orange-bg)',ic_c:'var(--orange)'},
+  {id:'detallado',name:'Detallado',desc:'Pulido, lavado, ceramic',ic:'ti-sparkles',bg:'var(--green-bg)',ic_c:'var(--green)'},
+  {id:'electrico',name:'Eléctrico',desc:'Batería, luces, sensores',ic:'ti-bolt',bg:'var(--orange-bg)',ic_c:'var(--orange)'},
+  {id:'llantas',name:'Llantas',desc:'Compra, reparación, alineación',ic:'ti-circle',bg:'var(--bg3)',ic_c:'var(--text2)'},
+  {id:'accesorios',name:'Accesorios',desc:'Hules, cristales, tapetes',ic:'ti-package',bg:'var(--blue-bg)',ic_c:'var(--blue)'},
+  {id:'movilidad',name:'Movilidad',desc:'Gasolina, traslados, fletes',ic:'ti-gas-station',bg:'var(--purple-bg)',ic_c:'var(--purple)'},
+  {id:'otros',name:'Otros',desc:'Lo que no encaje arriba',ic:'ti-dots',bg:'var(--bg3)',ic_c:'var(--text3)'},
+];
+const ETAPAS_CONFIG = [
+  {id:'compra',name:'Compra en EUA',desc:'Precio del dealer en USD',ic:'ti-building-store',bg:'var(--blue-bg)',ic_c:'var(--blue)'},
+  {id:'transporte_usa',name:'Transporte USA–Frontera',desc:'Flete al dealer',ic:'ti-truck',bg:'var(--orange-bg)',ic_c:'var(--orange)'},
+  {id:'importacion',name:'Importación / Legalización',desc:'Trámites aduanales',ic:'ti-file-certificate',bg:'var(--purple-bg)',ic_c:'var(--purple)'},
+  {id:'transporte_tepic',name:'Transporte Frontera–Tepic',desc:'Flete a Tepic',ic:'ti-map-pin',bg:'var(--green-bg)',ic_c:'var(--green)'},
+];
+const STATUS_ORDER = ['comprado','transporte_usa','importacion','transporte_tepic','taller','en_venta','vendido'];
+
+// ── Helpers ───────────────────────────────────────────────────
+const fmt = n => '$' + Math.round(Math.abs(n)).toLocaleString('es-MX');
+const today = () => new Date().toISOString().split('T')[0];
+const diasEntre = (a,b) => Math.floor((new Date(b)-new Date(a))/86400000);
+
+function pillHtml(status) {
+  const map = {
+    vendido:['pill-vendido','Vendido','ti-check'],
+    taller:['pill-taller','Taller','ti-tool'],
+    en_venta:['pill-venta','En venta','ti-tag'],
+    comprado:['pill-proceso','Comprado','ti-building-store'],
+    transporte_usa:['pill-proceso','En tránsito','ti-truck'],
+    importacion:['pill-proceso','Importando','ti-file-certificate'],
+    transporte_tepic:['pill-proceso','Hacia Tepic','ti-map-pin'],
+  };
+  const [cls,lbl,ic] = map[status]||['pill-proceso',status,'ti-car'];
+  return `<span class="pill ${cls}"><i class="ti ${ic}"></i>${lbl}</span>`;
+}
+function progPct(s){const i=STATUS_ORDER.indexOf(s);return i<0?0:Math.round((i/(STATUS_ORDER.length-1))*100)}
+function progColor(s){if(s==='vendido')return'var(--green)';if(s==='taller')return'var(--red)';if(s==='en_venta')return'var(--orange)';return'var(--blue)'}
+function catInfo(id){return CAT.find(c=>c.id===id)||{name:id,ic:'ti-dots',bg:'var(--bg3)',ic_c:'var(--text3)'}}
+function etapaInfo(id){return ETAPAS_CONFIG.find(e=>e.id===id)||{name:id,ic:'ti-circle',bg:'var(--bg3)',ic_c:'var(--text3)'}}
+function showToast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur)}
+
+// ── Navigation ────────────────────────────────────────────────
+window.goScreen = function(id) {
+  prevScreen = document.querySelector('.screen.active')?.id?.replace('screen-','') || 'dashboard';
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id)?.classList.add('active');
+  document.querySelectorAll('.bn').forEach(b=>b.classList.remove('active'));
+  const bnMap = {dashboard:'bn-dashboard',autos:'bn-autos',gasto:'bn-gasto',caja:'bn-caja',stats:'bn-stats'};
+  if(bnMap[id]) document.getElementById(bnMap[id])?.classList.add('active');
+  document.getElementById('fab').style.display = id==='dashboard'?'flex':'none';
+  // Load data on switch
+  if(id==='dashboard') loadDashboard();
+  if(id==='autos') loadAutos();
+  if(id==='caja') loadCaja();
+  if(id==='stats') loadStats();
+  if(id==='gasto') initGasto();
+  if(id==='nuevo-auto') initNuevoAuto();
+};
+window.goBack = () => goScreen(prevScreen || 'dashboard');
+window.goScreenWithAuto = function(s) {
+  if(autoActual) {
+    if(s==='gasto'){gSelAutoById(autoActual.id);gotoGasto=true;}
+    if(s==='simulador'){initSimulador(autoActual);}
+  }
+  goScreen(s);
+};
+
+// ── Sheets ────────────────────────────────────────────────────
+window.openSheet = id => document.getElementById(id)?.classList.add('show');
+window.closeSheet = (id,e) => {if(e.target===document.getElementById(id)||!e.target)document.getElementById(id)?.classList.remove('show')};
+
+// ── Auth ──────────────────────────────────────────────────────
+window.showLogout = () => openSheet('logout-sheet');
+window.doLogout = async () => { await sb.auth.signOut(); window.location.href='/index.html'; };
+
+async function init() {
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session){window.location.href='/index.html';return;}
+  sesion = session;
+  const {data} = await sb.from('socios').select('*').eq('id',session.user.id).single();
+  socio = data;
+  document.getElementById('db-avatar').textContent = socio?.avatar || socio?.nombre?.slice(0,2) || 'US';
+  document.getElementById('fab').style.display = 'flex';
+  loadDashboard();
+}
+
+// ── Dashboard ──────────────────────────────────────────────────
+async function loadDashboard() {
+  const now = new Date();
+  document.getElementById('db-time').textContent = now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('db-fecha').textContent = now.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('db-nombre').textContent = `Hola, ${socio?.nombre || ''}`;
+
+  try {
+    const autos = await fetchAutos();
+    const activos = autos.filter(a=>a.status!=='vendido');
+    const vendidos = autos.filter(a=>a.status==='vendido');
+    const ganTotal = vendidos.reduce((s,a)=>s+(a.ganancia_real||0),0);
+    const diasProm = vendidos.filter(a=>a.dias_total).reduce((s,a,_,arr)=>s+a.dias_total/arr.length,0);
+
+    document.getElementById('db-stats').innerHTML = `
+      <div class="stat-card dark">
+        <div class="stat-ic" style="background:rgba(255,255,255,0.1)"><i class="ti ti-trending-up" style="color:#fff"></i></div>
+        <div class="stat-label">Ganancia total</div>
+        <div class="stat-val">${fmt(ganTotal)}</div>
+        <div class="stat-sub">${vendidos.length} autos vendidos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ic" style="background:var(--green-bg)"><i class="ti ti-car" style="color:var(--green)"></i></div>
+        <div class="stat-label">En inventario</div>
+        <div class="stat-val">${activos.length} autos</div>
+        <div class="stat-sub">${activos.filter(a=>a.status==='taller').length} taller · ${activos.filter(a=>a.status==='en_venta').length} en venta</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ic" style="background:#F1EFE8"><i class="ti ti-clock" style="color:#5F5E5A"></i></div>
+        <div class="stat-label">Días prom. venta</div>
+        <div class="stat-val">${Math.round(diasProm)||'—'} días</div>
+        <div class="stat-sub">compra → venta</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ic" style="background:var(--red-bg)"><i class="ti ti-coin" style="color:var(--red)"></i></div>
+        <div class="stat-label">Préstamo activo</div>
+        <div class="stat-val text-red">$200,000</div>
+        <div class="stat-sub">fondo rotativo</div>
+      </div>`;
+
+    document.getElementById('db-activos').innerHTML = activos.length
+      ? `<div class="autos-list">${activos.map(autoCardHtml).join('')}</div>`
+      : '<div class="empty"><i class="ti ti-car-off"></i><p>Sin autos activos</p></div>';
+
+    document.getElementById('db-vendidos').innerHTML = vendidos.length
+      ? `<div class="autos-list">${vendidos.slice(0,3).map(autoCardHtml).join('')}</div>`
+      : '';
+
+    // Capital
+    const jInv = autos.reduce((s,a)=>s+(a.aporte_joseph||0),0);
+    const eInv = autos.reduce((s,a)=>s+(a.aporte_emmanuel||0),0);
+    document.getElementById('db-capital').innerHTML = `
+      <div class="cap-card j">
+        <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Joseph</div>
+        <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(jInv)}</span></div>
+        <div class="cap-total"><span style="font-size:10px;color:var(--text3)">En negocio</span><span class="cap-total-val">${fmt(jInv)}</span></div>
+      </div>
+      <div class="cap-card e">
+        <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Emmanuel</div>
+        <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(eInv)}</span></div>
+        <div class="cap-total"><span style="font-size:10px;color:var(--text3)">En negocio</span><span class="cap-total-val">${fmt(eInv)}</span></div>
+      </div>`;
+  } catch(e){console.error(e);}
+
+  // Slots
+  try {
+    const slots = await fetchSlots();
+    document.getElementById('db-slots').innerHTML = slots.map(s=>`
+      <div class="pc-slot ${s.libre?'libre':'ocupado'}">
+        <div class="pc-slot-label">Slot ${s.numero_slot}</div>
+        ${s.libre?'<div style="font-size:11px;color:var(--text3)">Disponible</div>':`<div class="pc-slot-auto">${s.autos?.modelo||'—'}</div><div class="pc-slot-monto">$100,000</div>`}
+      </div>`).join('');
+  } catch(e){console.error(e);}
+}
+
+// ── Fetch helpers ─────────────────────────────────────────────
+async function fetchAutos() {
+  const {data,error} = await sb.from('v_costo_auto').select('*').order('fecha_compra',{ascending:false});
+  if(error) throw error;
+  todosAutos = data||[];
+  return todosAutos;
+}
+async function fetchSlots() {
+  const {data,error} = await sb.from('prestamo_slots').select('*,autos(marca,modelo,anio)').order('numero_slot');
+  if(error) throw error;
+  return data||[];
+}
+async function fetchEtapas(autoId) {
+  const {data,error} = await sb.from('etapas_auto').select('*').eq('auto_id',autoId).order('created_at');
+  if(error) throw error;
+  return data||[];
+}
+async function fetchGastos(autoId) {
+  const {data,error} = await sb.from('gastos').select('*,socios(nombre)').eq('auto_id',autoId).order('fecha_pago',{ascending:false});
+  if(error) throw error;
+  return data||[];
+}
+async function fetchMovimientos() {
+  const {data,error} = await sb.from('movimientos_caja').select('*,socios(nombre),autos(marca,modelo,anio)').order('created_at',{ascending:false}).limit(10);
+  if(error) throw error;
+  return data||[];
+}
+
+// ── Auto card HTML ─────────────────────────────────────────────
+function autoCardHtml(a) {
+  const pct = progPct(a.status);
+  const color = progColor(a.status);
+  const thumbBg = a.status==='vendido'?'var(--green-bg)':a.status==='taller'?'var(--red-bg)':'var(--blue-bg)';
+  const thumbIc = a.status==='vendido'?'ti-check':'ti-car';
+  const diasTotal = a.dias_total || (a.fecha_compra ? diasEntre(a.fecha_compra, today()) : 0);
+  const gan = a.status==='vendido' ? a.ganancia_real : a.ganancia_estimada;
+  const ganHtml = gan!=null
+    ? `<div class="auto-gain ${gan>=0?'text-green':'text-red'}">${gan>=0?'+':''}${fmt(gan)}</div><div class="auto-dias">${a.status==='vendido'?'ganancia':'est.'}</div>`
+    : `<div class="auto-gain text-muted">${fmt(a.precio_venta_estimado||0)}</div><div class="auto-dias">precio est.</div>`;
+  return `<div class="auto-card" onclick="openDetalle('${a.id}')">
+    <div class="auto-thumb" style="background:${thumbBg}"><i class="ti ${thumbIc}" style="color:${color};font-size:22px"></i></div>
+    <div class="auto-info">
+      <div class="auto-name">${a.anio} ${a.marca} ${a.modelo}</div>
+      <div class="auto-meta">${a.vin||'Sin VIN'}</div>
+      <div style="margin-top:4px">${pillHtml(a.status)}</div>
+      <div class="auto-prog"><div class="auto-prog-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>
+    <div class="auto-right">${ganHtml}<div class="auto-dias">${diasTotal} días</div></div>
+  </div>`;
+}
+
+// ── Lista de autos ─────────────────────────────────────────────
+let filtroActual = 'todos';
+async function loadAutos() {
+  document.getElementById('autos-list-full').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  const autos = await fetchAutos();
+  renderAutosList(autos);
+}
+function renderAutosList(autos) {
+  let filtered = autos;
+  if(filtroActual!=='todos') {
+    if(filtroActual==='activos') filtered=autos.filter(a=>a.status!=='vendido');
+    else filtered=autos.filter(a=>a.status===filtroActual);
+  }
+  document.getElementById('autos-list-full').innerHTML = filtered.length
+    ? `<div class="autos-list">${filtered.map(autoCardHtml).join('')}</div><div style="height:20px"></div>`
+    : '<div class="empty"><i class="ti ti-car-off"></i><p>Sin autos en esta categoría</p></div>';
+}
+window.filtrarAutos = function(f,btn) {
+  filtroActual=f;
+  document.querySelectorAll('.filtro-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAutosList(todosAutos);
+};
+
+// ── Detalle auto ───────────────────────────────────────────────
+window.openDetalle = async function(id) {
+  prevScreen = document.querySelector('.screen.active')?.id?.replace('screen-','') || 'autos';
+  goScreen('detalle');
+  document.getElementById('det-timeline').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('det-gastos').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  const a = todosAutos.find(x=>x.id===id) || (await sb.from('v_costo_auto').select('*').eq('id',id).single()).data;
+  autoActual = a;
+
+  // Hero
+  document.getElementById('det-pill').innerHTML = pillHtml(a.status);
+  document.getElementById('det-titulo').textContent = `${a.anio} ${a.marca} ${a.modelo}`;
+  document.getElementById('det-sub').textContent = `VIN: ${a.vin||'N/D'} · ${a.fecha_compra||''}`;
+  const diasTotal = a.dias_total || diasEntre(a.fecha_compra, today());
+  document.getElementById('det-stats').innerHTML = `
+    <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:10px">
+      <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:3px">Costo total</div>
+      <div style="font-size:15px;font-weight:500;color:#fff">${fmt(a.costo_total||0)}</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:10px">
+      <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:3px">Precio est.</div>
+      <div style="font-size:15px;font-weight:500;color:#fff">${fmt(a.precio_venta_estimado||0)}</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:10px">
+      <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:3px">Días</div>
+      <div style="font-size:15px;font-weight:500;color:#97C459">${diasTotal}</div>
+    </div>`;
+
+  // Etapas timeline
+  const etapas = await fetchEtapas(id);
+  const etapaIds = ['compra','transporte_usa','importacion','transporte_tepic'];
+  let tlHtml = '';
+  etapaIds.forEach((eid,i)=>{
+    const e = etapas.find(x=>x.tipo===eid);
+    const cfg = etapaInfo(eid);
+    const isDone = e?.completado;
+    const isPagado = e?.pagado;
+    const isLast = i===etapaIds.length-1;
+    const dotCls = isDone?'done':isPagado?'activo':'pending';
+    const lineCls = isDone?'done':'';
+    tlHtml += `<div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-dot ${dotCls}"><i class="ti ${cfg.ic}"></i></div>
+        ${!isLast?`<div class="tl-line ${lineCls}"></div>`:''}
+      </div>
+      <div class="tl-content">
+        <div class="tl-row">
+          <div>
+            <div class="tl-name ${isPagado?'':'pending'}">${cfg.name}</div>
+            <div class="tl-sub">${e?.fecha_pago?`Pagado: ${e.fecha_pago}`:'Pendiente'}</div>
+          </div>
+          <div class="tl-monto ${isPagado?'':'pending'}">${e?fmt(e.monto_mxn):'—'}</div>
+        </div>
+        ${e?.fecha_pago&&!isDone?`<span class="tl-dias-pill activo"><i class="ti ti-clock" style="font-size:10px"></i>Finalizacion pendiente — <span onclick="completarEtapa('${e.id}')" style="text-decoration:underline;cursor:pointer">marcar como completado</span></span>`:''}
+        ${isDone&&e?.fecha_finalizacion?`<span class="tl-dias-pill"><i class="ti ti-check" style="font-size:10px"></i>Completado: ${e.fecha_finalizacion}</span>`:''}
+      </div>
+    </div>`;
+  });
+  // Etapa: taller + venta
+  const enTaller = a.status==='taller'||a.status==='en_venta'||a.status==='vendido';
+  tlHtml += `<div class="tl-item">
+    <div class="tl-left">
+      <div class="tl-dot ${enTaller?'activo':'pending'}"><i class="ti ti-tool"></i></div>
+      <div class="tl-line ${a.status==='en_venta'||a.status==='vendido'?'done':''}"></div>
+    </div>
+    <div class="tl-content">
+      <div class="tl-row">
+        <div><div class="tl-name ${enTaller?'':'pending'}">Reparaciones y gastos</div></div>
+        <div class="tl-monto ${enTaller?'':'pending'}">${fmt(a.total_gastos||0)}</div>
+      </div>
+    </div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-left"><div class="tl-dot ${a.status==='vendido'?'done':'pending'}"><i class="ti ti-tag"></i></div></div>
+    <div class="tl-content">
+      <div class="tl-row">
+        <div><div class="tl-name ${a.status==='vendido'?'':'pending'}">Venta</div><div class="tl-sub">${a.fecha_vendido||'Pendiente'}</div></div>
+        <div class="tl-monto ${a.status==='vendido'?'':'pending'}">${a.precio_venta_real?fmt(a.precio_venta_real):`${fmt(a.precio_venta_estimado||0)} est.`}</div>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('det-timeline').innerHTML = tlHtml;
+
+  // Aportaciones
+  const distLabel = a.dist_ganancia==='50_50'?'50% gan.':a.dist_ganancia==='100_joseph'?'100% gan.':'—';
+  const distLabelE = a.dist_ganancia==='50_50'?'50% gan.':a.dist_ganancia==='100_emmanuel'?'100% gan.':'—';
+  document.getElementById('det-aportes').innerHTML = `
+    <div style="background:var(--blue-bg);border-radius:12px;padding:10px">
+      <div style="font-size:10px;font-weight:500;color:var(--blue);margin-bottom:4px">Joseph</div>
+      <div style="font-size:13px;font-weight:500;color:var(--blue)">${fmt(a.aporte_joseph||0)}</div>
+      <div style="font-size:10px;color:var(--blue);margin-top:2px">${distLabel}</div>
+    </div>
+    <div style="background:var(--green-bg);border-radius:12px;padding:10px">
+      <div style="font-size:10px;font-weight:500;color:var(--green);margin-bottom:4px">Emmanuel</div>
+      <div style="font-size:13px;font-weight:500;color:var(--green)">${fmt(a.aporte_emmanuel||0)}</div>
+      <div style="font-size:10px;color:var(--green);margin-top:2px">${distLabelE}</div>
+    </div>
+    <div style="background:var(--purple-bg);border-radius:12px;padding:10px">
+      <div style="font-size:10px;font-weight:500;color:var(--purple);margin-bottom:4px">Préstamo</div>
+      <div style="font-size:13px;font-weight:500;color:var(--purple)">${a.usa_prestamo?'$100,000':'No aplica'}</div>
+      <div style="font-size:10px;color:var(--purple);margin-top:2px">Slot papá</div>
+    </div>`;
+
+  // Gastos
+  const gastos = await fetchGastos(id);
+  document.getElementById('det-gastos').innerHTML = gastos.length
+    ? gastos.map(g=>{
+        const c=catInfo(g.categoria);
+        return `<div class="gasto-item">
+          <div class="g-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
+          <div class="g-body"><div class="g-cat">${c.name}</div><div class="g-nota">${g.notas||'Sin nota'}</div></div>
+          <div class="g-right">
+            <div class="g-monto">${fmt(g.monto)}</div>
+            <div class="g-quien">${g.socios?.nombre||'—'}</div>
+            ${g.foto_url?`<div class="g-foto"><i class="ti ti-photo"></i>foto</div>`:`<div class="g-foto"><i class="ti ti-photo-off"></i>sin foto</div>`}
+          </div>
+        </div>`;}).join('')
+    : '<div class="empty" style="padding:20px"><i class="ti ti-receipt-off"></i><p>Sin gastos registrados</p></div>';
+
+  // Resumen
+  const costo = a.costo_total||0;
+  const pvEst = a.precio_venta_estimado||0;
+  const pvReal = a.precio_venta_real;
+  const ganEst = pvEst-costo;
+  document.getElementById('det-resumen').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3)">
+        <span style="color:var(--text3)">Costo total</span><span class="fw-500">${fmt(costo)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3)">
+        <span style="color:var(--text3)">Precio estimado</span><span class="fw-500">${fmt(pvEst)}</span>
+      </div>
+      ${pvReal?`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3)">
+        <span style="color:var(--text3)">Precio real de venta</span><span class="fw-500 text-green">${fmt(pvReal)}</span>
+      </div>`:''}
+      <div style="display:flex;justify-content:space-between;padding:8px 0 4px;font-size:13px">
+        <span class="fw-500">Ganancia ${pvReal?'real':'estimada'}</span>
+        <span class="fw-500 ${ganEst>=0?'text-green':'text-red'}">${ganEst>=0?'+':''}${fmt(ganEst)}</span>
+      </div>
+    </div>`;
+
+  // Botón liquidar si no está vendido
+  document.getElementById('det-liq-btn').innerHTML = a.status!=='vendido'
+    ? `<button class="btn btn-green btn-full" onclick="openLiqSheet('${a.id}')"><i class="ti ti-currency-dollar"></i>Liquidar venta</button>`
+    : '';
+};
+
+window.completarEtapa = async function(etapaId) {
+  const fecha = prompt('Fecha de finalización (YYYY-MM-DD):',today());
+  if(!fecha) return;
+  await sb.from('etapas_auto').update({fecha_finalizacion:fecha,completado:true}).eq('id',etapaId);
+  showToast('Etapa completada ✓');
+  if(autoActual) openDetalle(autoActual.id);
+};
+
+// ── Nuevo Auto ─────────────────────────────────────────────────
+let naDist='50_50', naFuente='prestamo', naStep=1, naTcReal=0;
+
+function initNuevoAuto() {
+  naStep=1; naDist='50_50'; naFuente='prestamo'; naTcReal=0;
+  document.getElementById('na-anio').value='';
+  document.getElementById('na-marca').value='';
+  document.getElementById('na-modelo').value='';
+  document.getElementById('na-vin').value='';
+  document.getElementById('na-millas').value='';
+  document.getElementById('na-fecha').value=today();
+  document.getElementById('na-usd').value='';
+  document.getElementById('na-mxn').value='';
+  document.getElementById('na-trans-usa').value='';
+  document.getElementById('na-imp').value='';
+  document.getElementById('na-trans-tep').value='15500';
+  document.getElementById('na-pventa').value='';
+  document.getElementById('na-ap-j').value='';
+  document.getElementById('na-ap-e').value='';
+  naUpdateSteps();
+  document.querySelectorAll('.subview').forEach(v=>v.classList.remove('active'));
+  document.getElementById('na-view-1').classList.add('active');
+  // Reset dist
+  document.querySelectorAll('.dt-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelector('.dt-btn').classList.add('sel');
+  naSetFuente('prestamo');
+}
+
+window.selDist = function(btn,d) {
+  naDist=d;
+  document.querySelectorAll('.dt-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  const notes={
+    '50_50':'La ganancia se divide en partes iguales.',
+    '100_joseph':'El 100% de la ganancia le toca a Joseph.',
+    '100_emmanuel':'El 100% de la ganancia le toca a Emmanuel.',
+  };
+  document.getElementById('na-dist-note').textContent=notes[d];
+};
+
+window.naGoStep = function(n) {
+  if(n===2){
+    const marca=document.getElementById('na-marca').value.trim();
+    const modelo=document.getElementById('na-modelo').value.trim();
+    if(!marca||!modelo){showToast('Ingresa marca y modelo');return;}
+  }
+  naStep=n;
+  naUpdateSteps();
+  document.querySelectorAll('.subview').forEach(v=>v.classList.remove('active'));
+  document.getElementById('na-view-'+n).classList.add('active');
+  if(n===3) naCalcResumen();
+};
+
+function naUpdateSteps() {
+  [1,2,3].forEach(i=>{
+    const s=document.getElementById('na-s'+i);
+    const dot=s.querySelector('.step-dot');
+    if(i<naStep){
+      s.className='step done';dot.className='step-dot done';
+      dot.innerHTML='<i class="ti ti-check" style="font-size:11px"></i>';
+    } else if(i===naStep){
+      s.className='step active';dot.className='step-dot active';dot.textContent=i;
+    } else {
+      s.className='step pending';dot.className='step-dot pending';dot.textContent=i;
+    }
+    if(i<3){const l=document.getElementById('na-l'+i);l.className='step-line'+(i<naStep?' done':'');}
+  });
+}
+
+window.naCalcDivisa = function() {
+  const usd=parseFloat(document.getElementById('na-usd').value)||0;
+  const mxn=parseFloat(document.getElementById('na-mxn').value)||0;
+  const el=document.getElementById('na-tc-resultado');
+  if(usd>0&&mxn>0){naTcReal=mxn/usd;el.textContent='$'+naTcReal.toFixed(4)+' MXN/USD';}
+  else{naTcReal=0;el.textContent='Ingresa ambos';}
+  naCalcTotal();
+};
+
+window.naCalcTotal = function() {
+  const mxnCompra=parseFloat(document.getElementById('na-mxn').value)||0;
+  const transUsaUsd=parseFloat(document.getElementById('na-trans-usa').value)||0;
+  const imp=parseFloat(document.getElementById('na-imp').value)||0;
+  const tep=parseFloat(document.getElementById('na-trans-tep').value)||15500;
+  const pventa=parseFloat(document.getElementById('na-pventa').value)||0;
+  const transUsaMxn=transUsaUsd*naTcReal;
+  const total=mxnCompra+transUsaMxn+imp+tep;
+  const gan=pventa-total;
+  const rows=[
+    ['Compra (MXN)',mxnCompra],
+    ['Transporte USA (MXN)',transUsaMxn],
+    ['Importación',imp],
+    ['Transporte a Tepic',tep],
+  ].filter(r=>r[1]>0);
+  document.getElementById('na-resumen-costos').innerHTML = `
+    ${rows.map(r=>`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3)"><span style="color:var(--text3)">${r[0]}</span><span class="fw-500">${fmt(r[1])}</span></div>`).join('')}
+    <div style="display:flex;justify-content:space-between;padding:8px 0 4px;font-size:13px"><span class="fw-500">Costo total estimado</span><span class="fw-500">${total>0?fmt(total):'—'}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px"><span style="color:var(--text3)">Ganancia estimada</span><span class="fw-500 ${gan>=0?'text-green':'text-red'}">${pventa>0&&total>0?(gan>=0?'+':'')+ fmt(gan):'—'}</span></div>`;
+};
+
+window.naSetFuente = function(f) {
+  naFuente=f;
+  document.getElementById('na-ft-prestamo').className='ft-btn'+(f==='prestamo'?' sel':'');
+  document.getElementById('na-ft-propio').className='ft-btn'+(f==='propio'?' sel':'');
+  document.getElementById('na-prestamo-block').classList.toggle('hidden',f!=='prestamo');
+  document.getElementById('na-sinprestamo-block').classList.toggle('hidden',f!=='propio');
+  document.getElementById('na-rc-p').style.display=f==='prestamo'?'block':'none';
+  naCalcResumen();
+};
+
+window.naCalcResumen = function() {
+  const mxnCompra=parseFloat(document.getElementById('na-mxn').value)||0;
+  const transUsaUsd=parseFloat(document.getElementById('na-trans-usa').value)||0;
+  const imp=parseFloat(document.getElementById('na-imp').value)||0;
+  const tep=parseFloat(document.getElementById('na-trans-tep').value)||15500;
+  const pventa=parseFloat(document.getElementById('na-pventa').value)||0;
+  const apJ=parseFloat(document.getElementById('na-ap-j').value)||0;
+  const apE=parseFloat(document.getElementById('na-ap-e').value)||0;
+  const costo=mxnCompra+(transUsaUsd*naTcReal)+imp+tep;
+  const gan=pventa-costo;
+  document.getElementById('na-r-costo').textContent=costo>0?fmt(costo):'—';
+  document.getElementById('na-r-venta').textContent=pventa>0?fmt(pventa):'—';
+  const ganEl=document.getElementById('na-r-gan');
+  ganEl.textContent=pventa>0&&costo>0?(gan>=0?'+':'')+fmt(gan):'—';
+  ganEl.className='res-val '+(gan>=0?'pos':'');
+  document.getElementById('na-rc-j').textContent=apJ>0?fmt(apJ):'—';
+  document.getElementById('na-rc-e').textContent=apE>0?fmt(apE):'—';
+};
+
+window.naGuardar = async function() {
+  const marca=document.getElementById('na-marca').value.trim();
+  const modelo=document.getElementById('na-modelo').value.trim();
+  const anio=parseInt(document.getElementById('na-anio').value)||0;
+  if(!marca||!modelo){showToast('Completa marca y modelo');naGoStep(1);return;}
+
+  const btn=document.getElementById('na-guardar-btn');
+  btn.disabled=true;btn.innerHTML='<div class="spinner spinner-white"></div>Guardando...';
+
+  try {
+    const mxnCompra=parseFloat(document.getElementById('na-mxn').value)||0;
+    const usd=parseFloat(document.getElementById('na-usd').value)||0;
+    const transUsaUsd=parseFloat(document.getElementById('na-trans-usa').value)||0;
+    const imp=parseFloat(document.getElementById('na-imp').value)||0;
+    const tep=parseFloat(document.getElementById('na-trans-tep').value)||15500;
+    const pventa=parseFloat(document.getElementById('na-pventa').value)||0;
+    const apJ=parseFloat(document.getElementById('na-ap-j').value)||0;
+    const apE=parseFloat(document.getElementById('na-ap-e').value)||0;
+    const transUsaMxn=transUsaUsd*naTcReal;
+
+    // Insertar auto
+    const {data:newAuto,error} = await sb.from('autos').insert({
+      marca,modelo:modelo.toUpperCase(),anio,
+      vin:document.getElementById('na-vin').value||null,
+      millas:parseInt(document.getElementById('na-millas').value)||null,
+      fecha_compra:document.getElementById('na-fecha').value||null,
+      status:'comprado',
+      dist_ganancia:naDist,
+      usa_prestamo:naFuente==='prestamo',
+      aporte_joseph:apJ,
+      aporte_emmanuel:apE,
+      precio_venta_estimado:pventa||null,
+      creado_por:sesion.user.id,
+    }).select().single();
+    if(error) throw error;
+
+    // Insertar etapa compra si hay datos
+    if(mxnCompra>0||usd>0){
+      await sb.from('etapas_auto').insert({
+        auto_id:newAuto.id,
+        tipo:'compra',
+        monto_usd:usd||null,
+        monto_mxn_banco:mxnCompra||null,
+        tipo_cambio_real:naTcReal||null,
+        monto_mxn:mxnCompra,
+        fecha_pago:document.getElementById('na-fecha').value||null,
+        pagado:true,completado:false,
+        registrado_por:sesion.user.id,
+      });
+    }
+    // Transporte USA
+    if(transUsaMxn>0){
+      await sb.from('etapas_auto').insert({auto_id:newAuto.id,tipo:'transporte_usa',monto_mxn:transUsaMxn,pagado:true,completado:false,registrado_por:sesion.user.id});
+    }
+    // Importación
+    if(imp>0){
+      await sb.from('etapas_auto').insert({auto_id:newAuto.id,tipo:'importacion',monto_mxn:imp,pagado:true,completado:false,registrado_por:sesion.user.id});
+    }
+    // Transporte Tepic
+    if(tep>0){
+      await sb.from('etapas_auto').insert({auto_id:newAuto.id,tipo:'transporte_tepic',monto_mxn:tep,pagado:true,completado:false,registrado_por:sesion.user.id});
+    }
+
+    // Asignar slot préstamo
+    if(naFuente==='prestamo'){
+      const {data:slots}=await sb.from('prestamo_slots').select('*').eq('libre',true).limit(1);
+      if(slots&&slots.length>0){
+        await sb.from('prestamo_slots').update({auto_id:newAuto.id,libre:false,updated_at:new Date()}).eq('id',slots[0].id);
+        await sb.from('historial_prestamo').insert({tipo:'asignacion',slot_id:slots[0].id,auto_id:newAuto.id,monto:100000,registrado_por:sesion.user.id});
+      }
+    }
+
+    showToast(`${marca} ${modelo} guardado ✓`);
+    setTimeout(()=>goScreen('autos'),1200);
+  } catch(e) {
+    console.error(e);
+    showToast('Error al guardar: '+e.message);
+    btn.disabled=false;
+    btn.innerHTML='<i class="ti ti-check"></i>Guardar auto';
+  }
+};
+
+// ── Gasto ─────────────────────────────────────────────────────
+let gTipo='operacion', gCat=null, gAutoId=null, gQuien=null, gFotoFile=null;
+
+function initGasto() {
+  gTipo='operacion'; gCat=null; gFotoFile=null;
+  document.getElementById('g-monto').value='';
+  document.getElementById('g-nota').value='';
+  document.getElementById('g-fecha').value=today();
+  document.getElementById('g-foto-ph').style.display='flex';
+  document.getElementById('g-foto-tk').style.display='none';
+  gSetTipo('operacion');
+  // Auto pre-seleccionado si viene del detalle
+  if(gAutoId&&autoActual?.id===gAutoId){
+    gSelAutoById(gAutoId);
+  } else {
+    gAutoId=null;
+    document.getElementById('g-auto-name').textContent='Seleccionar auto...';
+    document.getElementById('g-auto-name').classList.add('ph');
+    document.getElementById('g-auto-desc').textContent='';
+  }
+  // Pre-seleccionar quien según sesión
+  gQuien = socio?.nombre?.toLowerCase()==='joseph'?'j':'e';
+  gSelQ(gQuien,true);
+  if(gQuien==='j'){document.getElementById('g-qj-sub').textContent='sesión actual';document.getElementById('g-qe-sub').textContent='';}
+  else{document.getElementById('g-qe-sub').textContent='sesión actual';document.getElementById('g-qj-sub').textContent='';}
+}
+
+function gSelAutoById(id){
+  const a=todosAutos.find(x=>x.id===id);
+  if(!a) return;
+  gAutoId=id;
+  const n=document.getElementById('g-auto-name');
+  n.textContent=`${a.anio} ${a.marca} ${a.modelo}`;n.classList.remove('ph');
+  document.getElementById('g-auto-desc').textContent=a.vin||'';
+}
+
+window.gSetTipo = function(t) {
+  gTipo=t;gCat=null;
+  document.getElementById('g-tt-etapa').className='tt-btn'+(t==='etapa'?' sel':'');
+  document.getElementById('g-tt-op').className='tt-btn'+(t==='operacion'?' sel':'');
+  document.getElementById('g-cat-label').textContent=t==='etapa'?'Etapa del proceso':'Categoría';
+  document.getElementById('cat-sheet-title').textContent=t==='etapa'?'Etapa del proceso':'Categoría del gasto';
+  const n=document.getElementById('g-cat-name');n.textContent='Seleccionar...';n.classList.add('ph');
+  document.getElementById('g-cat-desc').textContent='';
+  document.getElementById('g-cat-ic').style.background='var(--bg3)';
+  document.getElementById('g-cat-ic-i').className='ti ti-layout-grid';
+  document.getElementById('g-cat-ic-i').style.color='var(--text3)';
+  document.getElementById('g-etapa-note').classList.toggle('hidden',t!=='etapa');
+  document.getElementById('g-fecha-fin-card').style.opacity=t==='etapa'?'1':'0.4';
+};
+
+// Open auto sheet for gasto
+document.querySelector('#auto-sheet').addEventListener('click',()=>{});
+const origOpenSheet = window.openSheet;
+window.openSheet = function(id) {
+  if(id==='auto-sheet'){
+    renderAutoSheetForGasto();
+  } else if(id==='cat-sheet'){
+    renderCatSheet();
+  }
+  document.getElementById(id)?.classList.add('show');
+};
+
+function renderAutoSheetForGasto(){
+  const activos=todosAutos.filter(a=>a.status!=='vendido');
+  document.getElementById('auto-sheet-list').innerHTML=activos.map(a=>`
+    <button class="sheet-item${gAutoId===a.id?' sel':''}" onclick="gSelAuto('${a.id}')">
+      <div class="sh-ic" style="background:var(--blue-bg)"><i class="ti ti-car" style="color:var(--blue)"></i></div>
+      <div style="flex:1"><div class="sh-name">${a.anio} ${a.marca} ${a.modelo}</div><div class="sh-desc">${pillHtml(a.status)}</div></div>
+      <i class="ti ti-check sh-check"></i>
+    </button>`).join('')||'<p style="padding:12px;color:var(--text3);font-size:13px">Sin autos activos</p>';
+}
+
+window.gSelAuto = function(id){
+  gAutoId=id;
+  gSelAutoById(id);
+  document.getElementById('auto-sheet').classList.remove('show');
+};
+
+function renderCatSheet(){
+  const items=gTipo==='etapa'?ETAPAS_CONFIG:CAT;
+  document.getElementById('cat-sheet-list').innerHTML=items.map(c=>`
+    <button class="sheet-item${gCat===c.id?' sel':''}" onclick="gSelCat('${c.id}')">
+      <div class="sh-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
+      <div style="flex:1"><div class="sh-name">${c.name}</div><div class="sh-desc">${c.desc}</div></div>
+      <i class="ti ti-check sh-check"></i>
+    </button>`).join('');
+}
+
+window.gSelCat = function(id){
+  gCat=id;
+  const items=gTipo==='etapa'?ETAPAS_CONFIG:CAT;
+  const c=items.find(x=>x.id===id);
+  const n=document.getElementById('g-cat-name');n.textContent=c.name;n.classList.remove('ph');
+  document.getElementById('g-cat-desc').textContent=c.desc;
+  document.getElementById('g-cat-ic').style.background=c.bg;
+  document.getElementById('g-cat-ic-i').className='ti '+c.ic;
+  document.getElementById('g-cat-ic-i').style.color=c.ic_c;
+  document.getElementById('cat-sheet').classList.remove('show');
+};
+
+window.gSelQ = function(q,silent) {
+  gQuien=q;
+  document.getElementById('g-qj').className='quien-btn'+(q==='j'?' sel':'');
+  document.getElementById('g-qe').className='quien-btn'+(q==='e'?' sel':'');
+};
+
+window.gOnFoto = function(input) {
+  const file=input.files[0];if(!file)return;gFotoFile=file;
+  document.getElementById('g-foto-preview').src=URL.createObjectURL(file);
+  document.getElementById('g-foto-ph').style.display='none';
+  document.getElementById('g-foto-tk').style.display='block';
+};
+window.gQuitarFoto = function(){
+  gFotoFile=null;
+  document.getElementById('g-foto-ph').style.display='flex';
+  document.getElementById('g-foto-tk').style.display='none';
+};
+
+window.gGuardar = async function(){
+  if(!gAutoId){openSheet('auto-sheet');return;}
+  if(!gCat){openSheet('cat-sheet');return;}
+  const monto=parseFloat(document.getElementById('g-monto').value);
+  if(!monto){document.getElementById('g-monto').focus();return;}
+
+  const btn=document.getElementById('g-guardar-btn');
+  btn.disabled=true;btn.innerHTML='<div class="spinner spinner-white"></div>Guardando...';
+
+  try {
+    let foto_url=null;
+    if(gFotoFile){
+      const path=`${gAutoId}/${Date.now()}_${gFotoFile.name}`;
+      const {data,error:upErr}=await sb.storage.from('comprobantes').upload(path,gFotoFile,{upsert:true});
+      if(!upErr){const {data:u}=sb.storage.from('comprobantes').getPublicUrl(path);foto_url=u.publicUrl;}
+    }
+    const fecha_pago=document.getElementById('g-fecha').value;
+    const notas=document.getElementById('g-nota').value;
+    const pagado_por_id = gQuien==='j'
+      ? (await sb.from('socios').select('id').eq('nombre','Joseph').single()).data?.id
+      : (await sb.from('socios').select('id').eq('nombre','Emmanuel').single()).data?.id;
+
+    if(gTipo==='etapa'){
+      await sb.from('etapas_auto').insert({
+        auto_id:gAutoId,tipo:gCat,monto_mxn:monto,
+        fecha_pago,notas,foto_url,pagado:true,completado:false,
+        registrado_por:sesion.user.id,
+      });
+    } else {
+      await sb.from('gastos').insert({
+        auto_id:gAutoId,categoria:gCat,monto,
+        fecha_pago,notas,foto_url,
+        pagado_por:pagado_por_id||sesion.user.id,
+        registrado_por:sesion.user.id,
+      });
+    }
+    showToast(gTipo==='etapa'?'Etapa registrada ✓':'Gasto guardado ✓');
+    setTimeout(()=>{
+      if(autoActual&&gAutoId===autoActual.id){openDetalle(autoActual.id);goScreen('detalle');}
+      else goScreen('autos');
+    },1200);
+  } catch(e){
+    console.error(e);showToast('Error: '+e.message);
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i>Guardar registro';
+  }
+};
+
+// ── Caja ──────────────────────────────────────────────────────
+let retQ='j';
+
+async function loadCaja(){
+  try{
+    const autos=await fetchAutos();
+    const jInv=autos.reduce((s,a)=>s+(a.aporte_joseph||0),0);
+    const eInv=autos.reduce((s,a)=>s+(a.aporte_emmanuel||0),0);
+    const movs=await fetchMovimientos();
+    let jGan=0,eGan=0,jRet=0,eRet=0;
+    movs.forEach(m=>{
+      if(m.tipo==='liquidacion'){jGan+=(m.ganancia_joseph||0);eGan+=(m.ganancia_emmanuel||0);}
+      if(m.tipo==='retiro_joseph'){jRet+=m.monto;}
+      if(m.tipo==='retiro_emmanuel'){eRet+=m.monto;}
+    });
+    cajaState={jInv,jGan,jRet,eInv,eGan,eRet,movs};
+    renderCaja();
+
+    const slots=await fetchSlots();
+    document.getElementById('caja-slots').innerHTML=slots.map(s=>`
+      <div class="pc-slot ${s.libre?'libre':'ocupado'}">
+        <div class="pc-slot-label">Slot ${s.numero_slot}</div>
+        ${s.libre?'<div style="font-size:11px;color:var(--text3)">Disponible</div>':`<div class="pc-slot-auto">${s.autos?.modelo||'—'}</div><div class="pc-slot-monto">$100,000</div>`}
+      </div>`).join('');
+  } catch(e){console.error(e);}
+}
+
+function renderCaja(){
+  const{jInv,jGan,jRet,eInv,eGan,eRet,movs}=cajaState;
+  const jT=jInv+jGan, eT=eInv+eGan;
+  document.getElementById('cj-inv').textContent=fmt(jInv);
+  document.getElementById('cj-gan').textContent=fmt(jGan);
+  document.getElementById('cj-ret').textContent=fmt(jRet);
+  document.getElementById('cj-total').textContent=fmt(jT);
+  document.getElementById('ce-inv').textContent=fmt(eInv);
+  document.getElementById('ce-gan').textContent=fmt(eGan);
+  document.getElementById('ce-ret').textContent=fmt(eRet);
+  document.getElementById('ce-total').textContent=fmt(eT);
+  document.getElementById('caja-movs').innerHTML=movs.slice(0,8).map(m=>{
+    const icMap={liquidacion:{cls:'ven',ic:'ti-currency-dollar'},retiro_joseph:{cls:'ret',ic:'ti-wallet'},retiro_emmanuel:{cls:'ret',ic:'ti-wallet'},pago_prestamo:{cls:'pag',ic:'ti-arrow-back-up'}};
+    const{cls='ven',ic='ti-coin'}=icMap[m.tipo]||{};
+    const pos=m.tipo==='liquidacion';
+    return`<div class="mov-item">
+      <div class="mov-ic ${cls}"><i class="ti ${ic}"></i></div>
+      <div class="mov-body"><div class="mov-n">${m.autos?`${m.autos.marca} ${m.autos.modelo}`:m.tipo}</div><div class="mov-s">${m.notas||m.socios?.nombre||''} · ${m.created_at?.slice(0,10)||''}</div></div>
+      <div class="mov-a ${pos?'pos':'neg'}">${pos?'+':'-'}${fmt(m.monto)}</div>
+    </div>`;}).join('')||'<p style="font-size:13px;color:var(--text3);text-align:center;padding:16px">Sin movimientos aún</p>';
+
+  // Populate liq select
+  const liqSel=document.getElementById('liq-auto');
+  liqSel.innerHTML='<option value="">Seleccionar...</option>'+todosAutos.filter(a=>a.status!=='vendido').map(a=>`<option value="${a.id}">${a.anio} ${a.marca} ${a.modelo}</option>`).join('');
+}
+
+window.openLiqSheet = function(autoId){
+  document.getElementById('liq-auto').value=autoId||'';
+  liqCalc();
+  openSheet('liq-sheet');
+};
+
+window.liqCalc = function(){
+  const id=document.getElementById('liq-auto').value;
+  const precio=parseFloat(document.getElementById('liq-precio').value)||0;
+  const prev=document.getElementById('liq-preview');
+  if(!id||!precio){prev.classList.add('hidden');return;}
+  const a=todosAutos.find(x=>x.id===id);
+  if(!a){return;}
+  const gan=precio-(a.costo_total||0);
+  let ganJ=0,ganE=0;
+  if(a.dist_ganancia==='50_50'){ganJ=ganE=gan>0?gan/2:0;}
+  else if(a.dist_ganancia==='100_joseph'){ganJ=gan>0?gan:0;}
+  else if(a.dist_ganancia==='100_emmanuel'){ganE=gan>0?gan:0;}
+  document.getElementById('lp-venta').textContent=fmt(precio);
+  document.getElementById('lp-costo').textContent=fmt(a.costo_total||0);
+  document.getElementById('lp-gan').textContent=(gan>=0?'+':'')+fmt(gan);
+  document.getElementById('lp-j').textContent='+'+fmt((a.aporte_joseph||0)+ganJ);
+  document.getElementById('lp-e').textContent='+'+fmt((a.aporte_emmanuel||0)+ganE);
+  prev.classList.remove('hidden');
+};
+
+window.liqEjecutar = async function(){
+  const id=document.getElementById('liq-auto').value;
+  const precio=parseFloat(document.getElementById('liq-precio').value)||0;
+  if(!id||!precio){showToast('Completa los campos');return;}
+  const a=todosAutos.find(x=>x.id===id);
+  const gan=precio-(a.costo_total||0);
+  let ganJ=0,ganE=0;
+  if(a.dist_ganancia==='50_50'){ganJ=ganE=gan>0?gan/2:0;}
+  else if(a.dist_ganancia==='100_joseph'){ganJ=gan>0?gan:0;}
+  else if(a.dist_ganancia==='100_emmanuel'){ganE=gan>0?gan:0;}
+  try{
+    await sb.from('movimientos_caja').insert({tipo:'liquidacion',auto_id:id,monto:precio,
+      precio_venta_real:precio,costo_total_auto:a.costo_total,ganancia_neta:gan,
+      recupera_joseph:a.aporte_joseph,recupera_emmanuel:a.aporte_emmanuel,
+      ganancia_joseph:ganJ,ganancia_emmanuel:ganE,registrado_por:sesion.user.id});
+    await sb.from('autos').update({status:'vendido',precio_venta_real:precio,fecha_vendido:today()}).eq('id',id);
+    if(a.usa_prestamo){
+      await sb.from('prestamo_slots').update({auto_id:null,libre:true,updated_at:new Date()}).eq('auto_id',id);
+    }
+    document.getElementById('liq-sheet').classList.remove('show');
+    showToast('Liquidación registrada ✓');
+    await fetchAutos();
+    loadCaja();
+  } catch(e){showToast('Error: '+e.message);}
+};
+
+window.retSelQ = function(q){
+  retQ=q;
+  document.getElementById('ret-qj').className='quien-btn'+(q==='j'?' sel':'');
+  document.getElementById('ret-qe').className='quien-btn'+(q==='e'?' sel':'');
+  retCalc();
+};
+window.retCalc = function(){
+  const m=parseFloat(document.getElementById('ret-monto').value)||0;
+  const prev=document.getElementById('ret-preview');
+  if(!m){prev.classList.add('hidden');return;}
+  const disp=retQ==='j'?(cajaState.jInv+cajaState.jGan):(cajaState.eInv+cajaState.eGan);
+  const over=m>disp;
+  document.getElementById('rp-disp').textContent=fmt(disp);
+  document.getElementById('rp-ret').textContent='-'+fmt(m);
+  document.getElementById('rp-rest').textContent=fmt(Math.max(0,disp-m));
+  document.getElementById('ret-warn').classList.toggle('hidden',!over);
+  document.getElementById('ret-ok-btn').style.opacity=over?'0.45':'1';
+  prev.classList.remove('hidden');
+};
+window.retEjecutar = async function(){
+  const m=parseFloat(document.getElementById('ret-monto').value)||0;
+  const nota=document.getElementById('ret-nota').value;
+  const disp=retQ==='j'?(cajaState.jInv+cajaState.jGan):(cajaState.eInv+cajaState.eGan);
+  if(!m||m>disp){return;}
+  try{
+    await sb.from('movimientos_caja').insert({tipo:retQ==='j'?'retiro_joseph':'retiro_emmanuel',monto:m,notas:nota,registrado_por:sesion.user.id});
+    document.getElementById('ret-sheet').classList.remove('show');
+    showToast('Retiro registrado ✓');
+    loadCaja();
+  } catch(e){showToast('Error: '+e.message);}
+};
+window.pagoCalc = function(){
+  const m=parseFloat(document.getElementById('pago-monto').value)||0;
+  const prev=document.getElementById('pago-preview');
+  if(!m){prev.classList.add('hidden');return;}
+  document.getElementById('pp-act').textContent=fmt(200000);
+  document.getElementById('pp-pag').textContent='-'+fmt(m);
+  document.getElementById('pp-rest').textContent=fmt(Math.max(0,200000-m));
+  prev.classList.remove('hidden');
+};
+window.pagoEjecutar = async function(){
+  const m=parseFloat(document.getElementById('pago-monto').value)||0;
+  const nota=document.getElementById('pago-nota').value;
+  if(!m) return;
+  try{
+    await sb.from('movimientos_caja').insert({tipo:'pago_prestamo',monto:m,notas:nota,registrado_por:sesion.user.id});
+    document.getElementById('pago-sheet').classList.remove('show');
+    showToast('Pago registrado ✓');
+    loadCaja();
+  } catch(e){showToast('Error: '+e.message);}
+};
+
+// ── Simulador ─────────────────────────────────────────────────
+let simAuto=null, simGastosSim=[];
+
+function initSimulador(a){
+  simAuto=a; simGastosSim=[];
+  document.getElementById('sim-titulo').textContent=`${a.anio} ${a.marca} ${a.modelo}`;
+  document.getElementById('sim-pv').value='';
+  const pvEst=a.precio_venta_estimado||0;
+  const presets=[pvEst-15000,pvEst-10000,pvEst-5000,pvEst,pvEst+5000].filter(v=>v>0);
+  document.getElementById('sim-presets').innerHTML=presets.map(p=>`<button class="pv-preset" onclick="simSetPreset(${p})">${fmt(p)}</button>`).join('');
+  renderSimCostos();
+  simCalc();
+}
+
+function renderSimCostos(){
+  if(!simAuto) return;
+  const a=simAuto;
+  document.getElementById('sim-costos').innerHTML=`
+    <div style="font-size:12px;font-weight:500;color:var(--text3);margin-bottom:8px">Costos del auto</div>
+    <div class="sim-row"><div class="sim-row-left"><div class="sim-row-ic" style="background:var(--bg3)"><i class="ti ti-package" style="color:var(--text3)"></i></div><div class="sim-row-lbl">Costos actuales</div></div><div class="sim-row-val">${fmt(a.costo_total||0)}</div></div>
+    ${simGastosSim.map((g,i)=>`<div class="sim-row gasto-sim-item"><div class="sim-row-left"><div class="sim-row-ic" style="background:var(--orange-bg)"><i class="ti ti-clock-plus" style="color:var(--orange)"></i></div><div class="sim-row-lbl sim">${g.nombre}</div></div><div style="display:flex;align-items:center;gap:8px"><div class="sim-row-val sim">${fmt(g.monto)}</div><button class="gsi-del" onclick="simBorrar(${i})"><i class="ti ti-x"></i></button></div></div>`).join('')}
+    <button class="add-sim-btn" onclick="openSheet('sim-sheet')"><i class="ti ti-plus"></i>Agregar gasto futuro</button>
+    <div class="sim-row" style="border-top:0.5px solid var(--border);margin-top:8px;padding-top:8px"><div class="sim-row-lbl fw-500" style="color:var(--text1)">Total estimado</div><div class="sim-row-val fw-500" id="sim-total-val">${fmt((a.costo_total||0)+simGastosSim.reduce((s,g)=>s+g.monto,0))}</div></div>`;
+}
+
+window.simSetPreset = v => {document.getElementById('sim-pv').value=v;simCalc();};
+window.simBorrar = i => {simGastosSim.splice(i,1);renderSimCostos();simCalc();};
+window.simAgregarGasto = function(){
+  const nombre=document.getElementById('sim-g-nombre').value.trim();
+  const monto=parseFloat(document.getElementById('sim-g-monto').value)||0;
+  if(!nombre||!monto){showToast('Completa nombre y monto');return;}
+  simGastosSim.push({nombre,monto});
+  document.getElementById('sim-g-nombre').value='';
+  document.getElementById('sim-g-monto').value='';
+  document.getElementById('sim-sheet').classList.remove('show');
+  renderSimCostos();simCalc();
+  showToast('Gasto simulado agregado');
+};
+
+window.simCalc = function(){
+  if(!simAuto) return;
+  const pv=parseFloat(document.getElementById('sim-pv').value)||0;
+  const costo=(simAuto.costo_total||0)+simGastosSim.reduce((s,g)=>s+g.monto,0);
+  const gan=pv-costo;
+  const ganEl=document.getElementById('sim-gan');
+  if(!pv){ganEl.textContent='Ingresa precio';ganEl.className='sim-gan zero';}
+  else{ganEl.textContent=(gan>=0?'+':'')+fmt(gan);ganEl.className='sim-gan '+(gan>0?'pos':gan<0?'neg':'zero');}
+  const rend=costo>0?((gan/costo)*100).toFixed(1)+'%':'—';
+  document.getElementById('sim-rend').textContent=pv?rend:'—';
+  const ganCada=gan>0?gan/2:0;
+  const a=simAuto;
+  let ganJ=0,ganE=0;
+  if(a.dist_ganancia==='50_50'){ganJ=ganE=ganCada;}
+  else if(a.dist_ganancia==='100_joseph'){ganJ=gan>0?gan:0;}
+  else if(a.dist_ganancia==='100_emmanuel'){ganE=gan>0?gan:0;}
+  document.getElementById('sim-j').textContent=pv?fmt((a.aporte_joseph||0)+ganJ):'—';
+  document.getElementById('sim-e').textContent=pv?fmt((a.aporte_emmanuel||0)+ganE):'—';
+  const el=document.getElementById('sim-total-val');
+  if(el) el.textContent=fmt(costo);
+};
+
+window.simCompartir = function(){
+  if(!simAuto){return;}
+  const pv=parseFloat(document.getElementById('sim-pv').value)||0;
+  if(!pv){showToast('Ingresa un precio de venta');return;}
+  const costo=(simAuto.costo_total||0)+simGastosSim.reduce((s,g)=>s+g.monto,0);
+  const gan=pv-costo;
+  const a=simAuto;
+  const ganCada=gan>0?gan/2:0;
+  let ganJ=0,ganE=0;
+  if(a.dist_ganancia==='50_50'){ganJ=ganE=ganCada;}
+  else if(a.dist_ganancia==='100_joseph'){ganJ=gan>0?gan:0;}
+  else{ganE=gan>0?gan:0;}
+  const extras=simGastosSim.length?'\n🔧 Gastos simulados:\n'+simGastosSim.map(g=>`   • ${g.nombre}: ${fmt(g.monto)}`).join('\n'):'';
+  const msg=`🚗 *Simulación ${a.anio} ${a.marca} ${a.modelo}*\n\n💰 Precio: ${fmt(pv)}\n📦 Costo: ${fmt(costo)}${extras}\n\n${gan>=0?'✅':'⚠️'} Ganancia: ${(gan>=0?'+':'')+fmt(gan)}\n\n👤 Joseph: ${fmt((a.aporte_joseph||0)+ganJ)}\n👤 Emmanuel: ${fmt((a.aporte_emmanuel||0)+ganE)}\n\n_Solo simulación_`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+};
+
+// ── Stats ─────────────────────────────────────────────────────
+async function loadStats(){
+  const autos=await fetchAutos();
+  const vendidos=autos.filter(a=>a.status==='vendido');
+  const ganTotal=vendidos.reduce((s,a)=>s+(a.ganancia_real||0),0);
+  const diasProm=vendidos.filter(a=>a.dias_total).reduce((s,a,_,arr)=>s+a.dias_total/arr.length,0);
+  const costosProm=autos.reduce((s,a,_,arr)=>s+(a.costo_total||0)/arr.length,0);
+  document.getElementById('stats-sub').textContent=`${autos.length} autos · 2026`;
+  document.getElementById('stats-kpis').innerHTML=`
+    <div class="stat-card dark">
+      <div class="stat-label">Ganancia total</div>
+      <div class="stat-val">${fmt(ganTotal)}</div>
+      <div class="stat-sub">${vendidos.length} vendidos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Días promedio</div>
+      <div class="stat-val">${Math.round(diasProm)||'—'}</div>
+      <div class="stat-sub">compra → venta</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Costo promedio</div>
+      <div class="stat-val">${costosProm>0?'$'+Math.round(costosProm/1000)+'k':'—'}</div>
+      <div class="stat-sub">todo incluido</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">En inventario</div>
+      <div class="stat-val">${autos.filter(a=>a.status!=='vendido').length}</div>
+      <div class="stat-sub">activos</div>
+    </div>`;
+
+  // Estimado vs real
+  const maxPv=Math.max(...autos.map(a=>a.precio_venta_estimado||0),1);
+  document.getElementById('stats-evr').innerHTML=`
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Comparación de precio estimado vs real</div>
+    ${autos.map(a=>{
+      const pvEst=a.precio_venta_estimado||0;
+      const pvReal=a.precio_venta_real;
+      const pctEst=Math.round((pvEst/maxPv)*100);
+      const pctReal=pvReal?Math.round((pvReal/maxPv)*100):0;
+      const diff=pvReal?pvReal-pvEst:null;
+      return`<div class="bar-row">
+        <div class="bar-meta">
+          <div style="font-size:12px;font-weight:500">${a.anio} ${a.modelo}</div>
+          <div style="font-size:12px;color:${diff!=null?(diff>=0?'var(--green)':'var(--red)'):'var(--text3)'}">
+            ${pvReal?fmt(pvReal):'En proceso'}
+          </div>
+        </div>
+        <div class="bar-track" style="margin-bottom:3px">
+          <div style="height:7px;background:var(--bg3);border-radius:4px;width:${pctEst}%;position:absolute"></div>
+          ${pvReal?`<div class="bar-fill ${diff<0?'under':''}" style="width:${pctReal}%"></div>`:'<div class="bar-fill" style="width:${pctEst}%;background:var(--border)"></div>'}
+        </div>
+        <div style="font-size:10px;color:var(--text3)">
+          Est: ${fmt(pvEst)}${diff!=null?` · Dif: ${diff>=0?'+':''}${fmt(diff)}`:''}
+          ${a.dias_total?` · ${a.dias_total} días`:''}
+        </div>
+      </div>`;}).join('')}`;
+
+  // Gastos por categoría
+  try{
+    const {data:gastos}=await sb.from('gastos').select('categoria,monto');
+    const totCat={};
+    gastos?.forEach(g=>{totCat[g.categoria]=(totCat[g.categoria]||0)+g.monto;});
+    const maxCat=Math.max(...Object.values(totCat),1);
+    document.getElementById('stats-cats').innerHTML=CAT.filter(c=>totCat[c.id]).map(c=>`
+      <div class="cat-item">
+        <div class="cat-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
+        <div class="cat-body">
+          <div style="display:flex;justify-content:space-between;font-size:12px"><span>${c.name}</span><span class="fw-500">${fmt(totCat[c.id])}</span></div>
+          <div class="cat-track"><div class="cat-fill" style="width:${Math.round((totCat[c.id]/maxCat)*100)}%"></div></div>
+        </div>
+      </div>`).join('')||'<p style="font-size:13px;color:var(--text3)">Sin gastos aún</p>';
+  }catch(e){console.error(e);}
+
+  // Capital socios
+  const jInv=autos.reduce((s,a)=>s+(a.aporte_joseph||0),0);
+  const eInv=autos.reduce((s,a)=>s+(a.aporte_emmanuel||0),0);
+  document.getElementById('stats-socios').innerHTML=`
+    <div class="cap-card j">
+      <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Joseph</div>
+      <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(jInv)}</span></div>
+      <div class="cap-total"><span style="font-size:10px;color:var(--text3)">En negocio</span><span class="cap-total-val">${fmt(jInv)}</span></div>
+    </div>
+    <div class="cap-card e">
+      <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Emmanuel</div>
+      <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(eInv)}</span></div>
+      <div class="cap-total"><span style="font-size:10px;color:var(--text3)">En negocio</span><span class="cap-total-val">${fmt(eInv)}</span></div>
+    </div>`;
+}
+
+// ── Init ──────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
