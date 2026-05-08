@@ -1958,7 +1958,7 @@ async function loadCaja(){
 
 function renderCaja(){
   const{jInv,jGan,jRet,eInv,eGan,eRet,movs}=cajaState;
-  const jT=jInv+jGan, eT=eInv+eGan;
+  const jT=jInv+jGan-jRet, eT=eInv+eGan-eRet;
   document.getElementById('cj-inv').textContent=fmt(jInv);
   document.getElementById('cj-gan').textContent=fmt(jGan);
   document.getElementById('cj-ret').textContent=fmt(jRet);
