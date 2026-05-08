@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Dashboard — AutoImport</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="../css/global.css">
+  <style>
+    .greeting { padding: 8px 20px 16px; }
+    .greet-sub { font-size: 12px; color: var(--text3); margin-bottom: 2px; }
+    .greet-name { font-size: 22px; font-weight: 500; }
+
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card { background: var(--bg2); border-radius: var(--radius-lg); padding: 13px; }
+    .stat-card.dark { background: var(--text1); }
+    .stat-ic { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+    .stat-ic i { font-size: 14px; }
+    .stat-label { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+    .stat-card.dark .stat-label { color: rgba(255,255,255,0.4); }
+    .stat-val { font-size: 20px; font-weight: 500; }
+    .stat-card.dark .stat-val { color: #fff; }
+    .stat-sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+    .stat-card.dark .stat-sub { color: rgba(255,255,255,0.3); }
+
+    .sec-hd { padding: 0 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .sec-hd-link { font-size: 12px; color: var(--text2); cursor: pointer; }
+
+    .autos-list { padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
+    .auto-card {
+      background: var(--bg2); border-radius: var(--radius-lg); padding: 14px;
+      display: flex; align-items: center; gap: 12px; cursor: pointer;
+      text-decoration: none; box-shadow: var(--shadow);
+    }
+    .auto-card:active { background: var(--bg3); }
+    .auto-thumb {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .auto-thumb i { font-size: 22px; }
+    .auto-info { flex: 1; min-width: 0; }
+    .auto-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .auto-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .auto-prog { height: 3px; background: var(--bg3); border-radius: 2px; margin-top: 7px; overflow: hidden; }
+    .auto-prog-fill { height: 100%; border-radius: 2px; }
+    .auto-right { text-align: right; flex-shrink: 0; }
+    .auto-gain { font-size: 13px; font-weight: 500; }
+    .auto-dias { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+    .cap-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .cap-card { border-radius: var(--radius-md); padding: 12px; }
+    .cap-card.j { background: var(--blue-bg); }
+    .cap-card.e { background: var(--green-bg); }
+    .cap-name { font-size: 11px; font-weight: 500; margin-bottom: 6px; }
+    .cap-card.j .cap-name { color: var(--blue); }
+    .cap-card.e .cap-name { color: var(--green); }
+    .cap-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .cap-lbl { font-size: 10px; color: var(--text3); }
+    .cap-val { font-size: 10px; font-weight: 500; }
+    .cap-card.j .cap-val { color: var(--blue); }
+    .cap-card.e .cap-val { color: var(--green); }
+    .cap-total { border-top: 0.5px solid rgba(0,0,0,0.08); margin-top: 6px; padding-top: 6px; display: flex; justify-content: space-between; }
+    .cap-total-val { font-size: 15px; font-weight: 500; }
+    .cap-card.j .cap-total-val { color: var(--blue); }
+    .cap-card.e .cap-total-val { color: var(--green); }
+
+    .prestamo-card { background: var(--bg2); border-radius: var(--radius-lg); padding: 14px; box-shadow: var(--shadow); }
+    .pc-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .pc-title { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .pc-slots { display: flex; gap: 8px; }
+    .pc-slot { flex: 1; border-radius: 10px; padding: 10px; }
+    .pc-slot.ocupado { background: var(--purple-bg); }
+    .pc-slot.libre { background: var(--bg3); border: 1px dashed var(--border); }
+    .pc-slot-label { font-size: 9px; font-weight: 500; color: var(--purple); margin-bottom: 4px; }
+    .pc-slot.libre .pc-slot-label { color: var(--text3); }
+    .pc-slot-auto { font-size: 11px; font-weight: 500; color: var(--purple); }
+    .pc-slot-monto { font-size: 12px; font-weight: 500; color: var(--purple); margin-top: 3px; }
+    .pc-slot-libre-txt { font-size: 11px; color: var(--text3); }
+
+    .fab {
+      position: fixed; bottom: 90px; right: 20px;
+      width: 52px; height: 52px;
+      background: var(--text1); border-radius: 50%;
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      text-decoration: none;
+      z-index: 50;
+    }
+    .fab i { font-size: 24px; color: #fff; }
+    .fab:active { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="page" id="page" style="display:none">
+
+    <div class="statusbar">
+      <div style="font-size:15px;font-weight:500" id="time"></div>
+      <div style="font-size:22px;color:var(--text3)"><i class="ti ti-battery"></i></div>
+    </div>
+
+    <div class="topbar" style="justify-content:space-between;position:relative">
+      <div style="font-size:17px;font-weight:500">AutoImport</div>
+      <div id="user-avatar" style="width:30px;height:30px;border-radius:50%;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--blue);cursor:pointer" onclick="signOut()"></div>
+    </div>
+
+    <div class="greeting">
+      <div class="greet-sub" id="fecha-hoy"></div>
+      <div class="greet-name" id="greeting-name">Hola</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="section">
+      <div class="stats-grid" id="stats-grid">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Autos activos -->
+    <div class="sec-hd">
+      <h3>Autos activos</h3>
+      <span class="sec-hd-link" onclick="window.location.href='autos.html'">Ver todos</span>
+    </div>
+    <div class="autos-list" id="autos-activos">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Vendidos recientes -->
+    <div class="sec-hd" style="margin-top:16px">
+      <h3>Vendidos</h3>
+    </div>
+    <div class="autos-list" id="autos-vendidos"></div>
+
+    <!-- Capital socios -->
+    <div class="sec-hd" style="margin-top:16px">
+      <h3>Mi capital</h3>
+      <span class="sec-hd-link" onclick="window.location.href='caja.html'">Ver detalle</span>
+    </div>
+    <div class="section">
+      <div class="cap-strip" id="cap-strip">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Préstamo -->
+    <div class="section">
+      <div class="prestamo-card">
+        <div class="pc-hd">
+          <div class="pc-title"><i class="ti ti-coin"></i>Préstamo (papá)</div>
+          <div style="font-size:13px;font-weight:500;color:var(--purple)" id="p-total">$200,000</div>
+        </div>
+        <div class="pc-slots" id="pc-slots">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:20px"></div>
+
+    <!-- FAB -->
+    <a href="gasto.html" class="fab"><i class="ti ti-plus"></i></a>
+
+    <!-- Bottom nav -->
+    <nav class="bottomnav">
+      <button class="bn active" onclick="location.href='dashboard.html'"><i class="ti ti-home"></i><span>Inicio</span></button>
+      <button class="bn" onclick="location.href='autos.html'"><i class="ti ti-car"></i><span>Autos</span></button>
+      <button class="bn" onclick="location.href='gasto.html'"><i class="ti ti-receipt"></i><span>Gasto</span></button>
+      <button class="bn" onclick="location.href='caja.html'"><i class="ti ti-wallet"></i><span>Caja</span></button>
+      <button class="bn" onclick="location.href='stats.html'"><i class="ti ti-chart-bar"></i><span>Stats</span></button>
+    </nav>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { requireAuth, getSocio, getAutos, getSlots, signOut as _signOut, supabase } from '../js/supabase.js';
+
+    window.signOut = async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/index.html';
+    };
+
+    const fmt = n => '$' + Math.round(Math.abs(n)).toLocaleString('es-MX');
+    const today = new Date();
+
+    function setTime() {
+      document.getElementById('time').textContent =
+        today.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function statusPill(status) {
+      const map = {
+        vendido: ['pill-vendido', 'Vendido', 'ti-check'],
+        taller: ['pill-taller', 'Taller', 'ti-tool'],
+        en_venta: ['pill-venta', 'En venta', 'ti-tag'],
+        comprado: ['pill-transito', 'Comprado', 'ti-building-store'],
+        transporte_usa: ['pill-transito', 'En tránsito', 'ti-truck'],
+        importacion: ['pill-transito', 'Importando', 'ti-file-certificate'],
+        transporte_tepic: ['pill-transito', 'Hacia Tepic', 'ti-map-pin'],
+      };
+      const [cls, label, ic] = map[status] || ['pill-transito', status, 'ti-car'];
+      return `<span class="pill ${cls}"><i class="ti ${ic}"></i>${label}</span>`;
+    }
+
+    function progPct(status) {
+      const map = { comprado: 10, transporte_usa: 25, importacion: 40, transporte_tepic: 55, taller: 70, en_venta: 85, vendido: 100 };
+      return map[status] || 0;
+    }
+    function progColor(status) {
+      if (status === 'vendido') return '#27500A';
+      if (status === 'taller') return '#A32D2D';
+      if (status === 'en_venta') return '#BA7517';
+      return '#185FA5';
+    }
+
+    function autoCard(a) {
+      const pct = progPct(a.status);
+      const color = progColor(a.status);
+      const diasTotal = a.dias_total || Math.floor((today - new Date(a.fecha_compra)) / 86400000);
+      const gan = a.status === 'vendido' ? a.ganancia_real : a.ganancia_estimada;
+      const ganStr = gan != null
+        ? `<div class="auto-gain ${gan >= 0 ? 'text-green' : 'text-red'}">${gan >= 0 ? '+' : ''}${fmt(gan)}</div><div class="auto-dias">${a.status === 'vendido' ? 'ganancia' : 'est.'}</div>`
+        : `<div class="auto-gain text-muted">${fmt(a.precio_venta_estimado || 0)}</div><div class="auto-dias">precio est.</div>`;
+      return `
+        <a href="detalle.html?id=${a.id}" class="auto-card">
+          <div class="auto-thumb" style="background:${a.status === 'vendido' ? 'var(--green-bg)' : a.status === 'taller' ? 'var(--red-bg)' : 'var(--blue-bg)'}">
+            <i class="ti ${a.status === 'vendido' ? 'ti-check' : 'ti-car'}" style="color:${color}"></i>
+          </div>
+          <div class="auto-info">
+            <div class="auto-name">${a.anio} ${a.marca} ${a.modelo}</div>
+            <div class="auto-meta">${a.vin || 'Sin VIN'}</div>
+            <div style="margin-top:4px">${statusPill(a.status)}</div>
+            <div class="auto-prog"><div class="auto-prog-fill" style="width:${pct}%;background:${color}"></div></div>
+          </div>
+          <div class="auto-right">${ganStr}<div class="auto-dias">${diasTotal} días</div></div>
+        </a>`;
+    }
+
+    async function init() {
+      const session = await requireAuth();
+      if (!session) return;
+
+      setTime();
+      document.getElementById('fecha-hoy').textContent =
+        today.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+
+      const socio = await getSocio();
+      if (socio) {
+        document.getElementById('greeting-name').textContent = `Hola, ${socio.nombre}`;
+        document.getElementById('user-avatar').textContent = socio.avatar || socio.nombre.slice(0, 2).toUpperCase();
+      }
+
+      document.getElementById('page').style.display = 'block';
+
+      // Autos
+      try {
+        const autos = await getAutos();
+        const activos = autos.filter(a => a.status !== 'vendido');
+        const vendidos = autos.filter(a => a.status === 'vendido').slice(0, 3);
+
+        document.getElementById('autos-activos').innerHTML =
+          activos.length ? activos.map(autoCard).join('') :
+          '<div class="empty"><i class="ti ti-car-off"></i><p>Sin autos activos</p></div>';
+
+        document.getElementById('autos-vendidos').innerHTML =
+          vendidos.length ? vendidos.map(autoCard).join('') : '';
+
+        // Stats
+        const ganTotal = autos.filter(a => a.status === 'vendido').reduce((s, a) => s + (a.ganancia_real || 0), 0);
+        const diasProm = autos.filter(a => a.dias_total).reduce((s, a, _, arr) => s + a.dias_total / arr.length, 0);
+        document.getElementById('stats-grid').innerHTML = `
+          <div class="stat-card dark">
+            <div class="stat-ic" style="background:rgba(255,255,255,0.1)"><i class="ti ti-trending-up" style="color:#fff"></i></div>
+            <div class="stat-label">Ganancia total</div>
+            <div class="stat-val">${fmt(ganTotal)}</div>
+            <div class="stat-sub">${autos.filter(a=>a.status==='vendido').length} autos vendidos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-ic" style="background:var(--green-bg)"><i class="ti ti-car" style="color:var(--green)"></i></div>
+            <div class="stat-label">En inventario</div>
+            <div class="stat-val">${activos.length} autos</div>
+            <div class="stat-sub">${activos.filter(a=>a.status==='taller').length} taller · ${activos.filter(a=>a.status==='en_venta').length} en venta</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-ic" style="background:#F1EFE8"><i class="ti ti-clock" style="color:#5F5E5A"></i></div>
+            <div class="stat-label">Días prom. venta</div>
+            <div class="stat-val">${Math.round(diasProm) || '—'} días</div>
+            <div class="stat-sub">compra → venta</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-ic" style="background:var(--red-bg)"><i class="ti ti-coin" style="color:var(--red)"></i></div>
+            <div class="stat-label">Préstamo activo</div>
+            <div class="stat-val text-red">$200,000</div>
+            <div class="stat-sub">fondo rotativo</div>
+          </div>`;
+
+        // Capital (cálculo simple desde gastos y movimientos)
+        const jAp = autos.reduce((s,a)=>s+(a.aporte_joseph||0),0);
+        const eAp = autos.reduce((s,a)=>s+(a.aporte_emmanuel||0),0);
+        document.getElementById('cap-strip').innerHTML = `
+          <div class="cap-card j">
+            <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Joseph</div>
+            <div class="cap-row"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(jAp)}</span></div>
+            <div class="cap-total"><span style="font-size:10px;color:var(--text3)">En negocio</span><span class="cap-total-val">${fmt(jAp)}</span></div>
+          </div>
+          <div class="cap-card e">
+            <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Emmanuel</div>
+            <div class="cap-row"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(eAp)}</span></div>
+            <div class="cap-total"><span style="font-size:10px;color:var(--text3)">En negocio</span><span class="cap-total-val">${fmt(eAp)}</span></div>
+          </div>`;
+      } catch (e) {
+        console.error(e);
+      }
+
+      // Slots préstamo
+      try {
+        const slots = await getSlots();
+        document.getElementById('pc-slots').innerHTML = slots.map(s => `
+          <div class="pc-slot ${s.libre ? 'libre' : 'ocupado'}">
+            <div class="pc-slot-label">Slot ${s.numero_slot}</div>
+            ${s.libre
+              ? '<div class="pc-slot-libre-txt">Disponible</div>'
+              : `<div class="pc-slot-auto">${s.autos?.modelo || '—'}</div><div class="pc-slot-monto">$100,000</div>`}
+          </div>`).join('');
+      } catch(e) { console.error(e); }
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "rewrites": [
+    { "source": "/dashboard", "destination": "/pages/dashboard.html" },
+    { "source": "/autos", "destination": "/pages/autos.html" },
+    { "source": "/gasto", "destination": "/pages/gasto.html" },
+    { "source": "/caja", "destination": "/pages/caja.html" },
+    { "source": "/stats", "destination": "/pages/stats.html" },
+    { "source": "/nuevo-auto", "destination": "/pages/nuevo-auto.html" },
+    { "source": "/detalle", "destination": "/pages/detalle.html" },
+    { "source": "/simulador", "destination": "/pages/simulador.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}

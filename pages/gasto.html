@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Registrar gasto — AutoImport</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <link rel="stylesheet" href="../css/global.css">
+  <style>
+    .selector-btn {
+      background: var(--bg2); border-radius: var(--radius-lg);
+      padding: 14px 16px; display: flex; align-items: center;
+      justify-content: space-between; cursor: pointer; border: none;
+      width: 100%; text-align: left; box-shadow: var(--shadow);
+    }
+    .selector-btn:active { background: var(--bg3); }
+    .sel-ic { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sel-ic i { font-size: 18px; }
+    .sel-name { font-size: 14px; font-weight: 500; }
+    .sel-name.ph { color: var(--text3); }
+    .sel-desc { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+    .tipo-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tt-btn {
+      background: var(--bg2); border-radius: var(--radius-md);
+      padding: 14px 10px; border: none; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 7px;
+      text-align: center; box-shadow: var(--shadow);
+    }
+    .tt-btn.sel { background: var(--text1); }
+    .tt-ic { width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center; justify-content: center; }
+    .tt-ic i { font-size: 19px; }
+    .tt-name { font-size: 12px; font-weight: 500; color: var(--text3); }
+    .tt-desc { font-size: 10px; color: var(--text3); line-height: 1.3; }
+    .tt-btn.sel .tt-name, .tt-btn.sel .tt-desc { color: rgba(255,255,255,0.7); }
+    .tt-btn.sel .tt-name { color: #fff; }
+    .tt-btn.sel .tt-ic { background: rgba(255,255,255,0.12); }
+    .tt-btn.sel .tt-ic i { color: #fff; }
+
+    .fecha-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .fecha-card { background: var(--bg2); border-radius: var(--radius-md); padding: 12px 14px; box-shadow: var(--shadow); }
+    .fecha-card.pendiente { background: transparent; border: 1.5px dashed var(--border); }
+    .fecha-lbl { font-size: 11px; color: var(--text3); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+    .fecha-lbl i { font-size: 13px; }
+    .fecha-input { width: 100%; border: none; background: none; font-size: 14px; font-weight: 500; color: var(--text1); outline: none; font-family: var(--font); }
+    .fecha-card.pendiente .fecha-val { font-size: 12px; color: var(--text3); }
+
+    .info-note { background: var(--blue-bg); border-radius: 10px; padding: 9px 12px; font-size: 11px; color: var(--blue); line-height: 1.5; display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; }
+    .info-note i { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+    .monto-card { background: var(--bg2); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow); }
+    .monto-lbl { font-size: 12px; color: var(--text3); text-align: center; margin-bottom: 4px; }
+    .monto-wrap { display: flex; align-items: baseline; justify-content: center; gap: 4px; }
+    .monto-prefix { font-size: 22px; font-weight: 500; color: var(--text3); }
+    .monto-input { font-size: 36px; font-weight: 500; color: var(--text1); border: none; background: none; width: 190px; text-align: center; outline: none; font-family: var(--font); }
+    .monto-input::placeholder { color: #ddd; }
+    .monto-divider { height: 0.5px; background: var(--border); margin: 12px 0; }
+    .nota-input { width: 100%; border: none; background: none; font-size: 14px; color: var(--text1); outline: none; resize: none; min-height: 40px; font-family: var(--font); }
+    .nota-input::placeholder { color: var(--text3); }
+
+    .foto-placeholder {
+      height: 130px; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 6px; border: 1.5px dashed var(--border);
+      border-radius: var(--radius-lg); cursor: pointer; background: var(--bg2);
+    }
+    .foto-placeholder:active { background: var(--bg3); }
+    .foto-ic { width: 42px; height: 42px; border-radius: 12px; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+    .foto-ic i { font-size: 20px; color: var(--text3); }
+    .foto-lbl { font-size: 13px; font-weight: 500; color: var(--text3); }
+    .foto-sub { font-size: 11px; color: var(--text3); }
+    .foto-taken { border-radius: var(--radius-lg); overflow: hidden; height: 130px; display: none; position: relative; }
+    .foto-taken img { width: 100%; height: 100%; object-fit: cover; }
+    .foto-retake { position: absolute; bottom: 8px; right: 10px; background: rgba(0,0,0,0.6); border: none; border-radius: 20px; padding: 5px 12px; color: #fff; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+    .foto-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .foto-opt { background: var(--bg2); border-radius: 12px; padding: 11px; border: none; cursor: pointer; display: flex; align-items: center; gap: 7px; box-shadow: var(--shadow); }
+    .foto-opt i { font-size: 17px; color: var(--text2); }
+    .foto-opt span { font-size: 13px; }
+
+    .quien-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .quien-btn { background: var(--bg2); border-radius: var(--radius-md); padding: 13px; border: none; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow); }
+    .quien-av { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; }
+    .quien-av.j { background: var(--blue-bg); color: var(--blue); }
+    .quien-av.e { background: var(--green-bg); color: var(--green); }
+    .quien-name { font-size: 13px; font-weight: 500; }
+    .quien-sub { font-size: 10px; color: var(--text3); margin-top: 1px; }
+    .quien-btn.sel { background: var(--text1); }
+    .quien-btn.sel .quien-name, .quien-btn.sel .quien-sub { color: #fff; }
+    .quien-btn.sel .quien-av { background: rgba(255,255,255,0.15) !important; color: #fff !important; }
+
+    .sheet-item { background: var(--bg2); border-radius: var(--radius-md); padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; border: none; width: 100%; text-align: left; margin-bottom: 6px; }
+    .sheet-item:active { background: var(--bg3); }
+    .sheet-item.sel { background: var(--text1); }
+    .sh-ic { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sh-ic i { font-size: 17px; }
+    .sh-name { font-size: 13px; font-weight: 500; color: var(--text1); }
+    .sh-desc { font-size: 11px; color: var(--text3); margin-top: 1px; }
+    .sh-check { font-size: 16px; color: #fff; display: none; margin-left: auto; }
+    .sheet-item.sel .sh-name { color: #fff; }
+    .sheet-item.sel .sh-desc { color: rgba(255,255,255,0.4); }
+    .sheet-item.sel .sh-ic { background: rgba(255,255,255,0.12) !important; }
+    .sheet-item.sel .sh-ic i { color: #fff !important; }
+    .sheet-item.sel .sh-check { display: block; }
+  </style>
+</head>
+<body>
+  <div class="page fade-in">
+    <div class="statusbar">
+      <div style="font-size:15px;font-weight:500" id="time"></div>
+    </div>
+    <div class="topbar">
+      <button class="back-btn" onclick="history.back()"><i class="ti ti-arrow-left"></i></button>
+      <div class="topbar-title">Registrar gasto</div>
+    </div>
+
+    <!-- Auto -->
+    <div class="section">
+      <div class="sec-label">Auto</div>
+      <button class="selector-btn" onclick="openAutoSheet()" id="auto-btn">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="sel-ic" style="background:var(--blue-bg)"><i class="ti ti-car" style="color:var(--blue)"></i></div>
+          <div>
+            <div class="sel-name ph" id="auto-name">Seleccionar auto...</div>
+            <div class="sel-desc" id="auto-desc"></div>
+          </div>
+        </div>
+        <i class="ti ti-chevron-down" style="font-size:18px;color:var(--text3)"></i>
+      </button>
+    </div>
+
+    <!-- Tipo -->
+    <div class="section">
+      <div class="sec-label">Tipo de registro</div>
+      <div class="tipo-toggle">
+        <button class="tt-btn" id="tt-etapa" onclick="setTipo('etapa')">
+          <div class="tt-ic" style="background:var(--purple-bg)"><i class="ti ti-route" style="color:var(--purple)"></i></div>
+          <div class="tt-name">Etapa del proceso</div>
+          <div class="tt-desc">Compra, transporte, importación</div>
+        </button>
+        <button class="tt-btn sel" id="tt-op" onclick="setTipo('operacion')">
+          <div class="tt-ic"><i class="ti ti-tool"></i></div>
+          <div class="tt-name">Gasto de operación</div>
+          <div class="tt-desc">Mecánica, detallado, accesorios...</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Categoría/Etapa -->
+    <div class="section">
+      <div class="sec-label" id="cat-label">Categoría</div>
+      <button class="selector-btn" onclick="openCatSheet()">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="sel-ic" id="cat-ic" style="background:var(--bg3)">
+            <i class="ti ti-layout-grid" style="color:var(--text3)" id="cat-ic-i"></i>
+          </div>
+          <div>
+            <div class="sel-name ph" id="cat-name">Seleccionar...</div>
+            <div class="sel-desc" id="cat-desc"></div>
+          </div>
+        </div>
+        <i class="ti ti-chevron-down" style="font-size:18px;color:var(--text3)"></i>
+      </button>
+    </div>
+
+    <!-- Fechas -->
+    <div class="section">
+      <div class="sec-label">Fechas</div>
+      <div class="fecha-row">
+        <div class="fecha-card">
+          <div class="fecha-lbl"><i class="ti ti-coin"></i>Fecha de pago</div>
+          <input class="fecha-input" type="date" id="fecha-pago">
+        </div>
+        <div class="fecha-card pendiente" id="fecha-fin-card">
+          <div class="fecha-lbl" style="color:var(--text3)"><i class="ti ti-flag"></i>Finalización</div>
+          <div class="fecha-val">Se completa después</div>
+        </div>
+      </div>
+      <div class="info-note hidden" id="etapa-note">
+        <i class="ti ti-info-circle"></i>
+        La fecha de finalización la registras desde el detalle del auto cuando la operación se complete.
+      </div>
+    </div>
+
+    <!-- Monto y nota -->
+    <div class="section">
+      <div class="monto-card">
+        <div class="monto-lbl">Monto pagado</div>
+        <div class="monto-wrap">
+          <span class="monto-prefix">$</span>
+          <input class="monto-input" type="number" inputmode="decimal" placeholder="0" id="monto-inp">
+        </div>
+        <div class="monto-divider"></div>
+        <textarea class="nota-input" id="nota-inp" placeholder="Nota opcional..." rows="2"></textarea>
+      </div>
+    </div>
+
+    <!-- Foto -->
+    <div class="section">
+      <div class="sec-label">Comprobante <span style="color:var(--text3);font-size:10px;font-weight:400">· opcional</span></div>
+      <div id="foto-ph" class="foto-placeholder" onclick="document.getElementById('foto-input').click()">
+        <div class="foto-ic"><i class="ti ti-camera"></i></div>
+        <div class="foto-lbl">Agregar foto</div>
+        <div class="foto-sub">Ticket, factura o referencia</div>
+      </div>
+      <div id="foto-tk" class="foto-taken">
+        <img id="foto-preview" src="" alt="Comprobante">
+        <button class="foto-retake" onclick="quitarFoto()"><i class="ti ti-refresh"></i>Cambiar</button>
+      </div>
+      <input type="file" id="foto-input" accept="image/*" capture="environment" style="display:none" onchange="onFoto(this)">
+      <div class="foto-opts">
+        <button class="foto-opt" onclick="document.getElementById('foto-input').click()">
+          <i class="ti ti-camera"></i><span>Cámara</span>
+        </button>
+        <button class="foto-opt" onclick="document.getElementById('foto-galeria').click()">
+          <i class="ti ti-photo"></i><span>Galería</span>
+        </button>
+      </div>
+      <input type="file" id="foto-galeria" accept="image/*" style="display:none" onchange="onFoto(this)">
+    </div>
+
+    <!-- Quién pagó -->
+    <div class="section">
+      <div class="sec-label">¿Quién pagó?</div>
+      <div class="quien-row">
+        <button class="quien-btn" id="qj" onclick="selQ('j')">
+          <div class="quien-av j">JO</div>
+          <div><div class="quien-name">Joseph</div><div class="quien-sub"></div></div>
+        </button>
+        <button class="quien-btn" id="qe" onclick="selQ('e')">
+          <div class="quien-av e">EM</div>
+          <div><div class="quien-name">Emmanuel</div><div class="quien-sub"></div></div>
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <button class="btn btn-primary btn-full" onclick="guardar()" id="guardar-btn">
+        <i class="ti ti-check"></i>Guardar registro
+      </button>
+    </div>
+  </div>
+
+  <!-- Sheet: seleccionar auto -->
+  <div class="sheet-overlay" id="auto-sheet" onclick="closeSheet('auto-sheet',event)">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Seleccionar auto</div>
+      <div id="auto-sheet-list"></div>
+    </div>
+  </div>
+
+  <!-- Sheet: categoría/etapa -->
+  <div class="sheet-overlay" id="cat-sheet" onclick="closeSheet('cat-sheet',event)">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title" id="cat-sheet-title">Categoría</div>
+      <div id="cat-sheet-list"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <nav class="bottomnav">
+    <button class="bn" onclick="location.href='dashboard.html'"><i class="ti ti-home"></i><span>Inicio</span></button>
+    <button class="bn" onclick="location.href='autos.html'"><i class="ti ti-car"></i><span>Autos</span></button>
+    <button class="bn active"><i class="ti ti-receipt"></i><span>Gasto</span></button>
+    <button class="bn" onclick="location.href='caja.html'"><i class="ti ti-wallet"></i><span>Caja</span></button>
+    <button class="bn" onclick="location.href='stats.html'"><i class="ti ti-chart-bar"></i><span>Stats</span></button>
+  </nav>
+
+  <script type="module">
+    import { requireAuth, getSocio, getAutos, crearGasto, crearEtapa, subirFoto, supabase } from '../js/supabase.js';
+
+    const etapas = [
+      { id:'compra', name:'Compra en EUA', desc:'Precio del dealer en USD', ic:'ti-building-store', bg:'var(--blue-bg)', ic_c:'var(--blue)' },
+      { id:'transporte_usa', name:'Transporte USA–Frontera', desc:'Flete desde dealer a frontera', ic:'ti-truck', bg:'var(--orange-bg)', ic_c:'var(--orange)' },
+      { id:'importacion', name:'Importación / Legalización', desc:'Trámites aduanales', ic:'ti-file-certificate', bg:'var(--purple-bg)', ic_c:'var(--purple)' },
+      { id:'transporte_tepic', name:'Transporte Frontera–Tepic', desc:'Flete de frontera a Tepic', ic:'ti-map-pin', bg:'var(--green-bg)', ic_c:'var(--green)' },
+    ];
+    const categorias = [
+      { id:'mecanica', name:'Mecánica', desc:'Motor, frenos, suspensión', ic:'ti-engine', bg:'var(--red-bg)', ic_c:'var(--red)' },
+      { id:'carroceria', name:'Carrocería / Pintura', desc:'Golpes, rayones, pintura', ic:'ti-paint', bg:'var(--orange-bg)', ic_c:'var(--orange)' },
+      { id:'detallado', name:'Detallado', desc:'Pulido, lavado, ceramic', ic:'ti-sparkles', bg:'var(--green-bg)', ic_c:'var(--green)' },
+      { id:'electrico', name:'Eléctrico', desc:'Batería, luces, sensores', ic:'ti-bolt', bg:'var(--orange-bg)', ic_c:'var(--orange)' },
+      { id:'llantas', name:'Llantas', desc:'Compra, reparación, alineación', ic:'ti-circle', bg:'var(--bg3)', ic_c:'var(--text2)' },
+      { id:'accesorios', name:'Accesorios', desc:'Hules, cristales, tapetes', ic:'ti-package', bg:'var(--blue-bg)', ic_c:'var(--blue)' },
+      { id:'movilidad', name:'Movilidad', desc:'Gasolina, traslados, fletes', ic:'ti-gas-station', bg:'var(--purple-bg)', ic_c:'var(--purple)' },
+      { id:'otros', name:'Otros', desc:'Lo que no encaje arriba', ic:'ti-dots', bg:'var(--bg3)', ic_c:'var(--text3)' },
+    ];
+
+    let tipo = 'operacion';
+    let selCat = null;
+    let selAutoId = null;
+    let selQuien = null;
+    let fotoFile = null;
+    let autos = [];
+    let socio = null;
+
+    // Init
+    async function init() {
+      await requireAuth();
+      socio = await getSocio();
+      if (!socio) return;
+
+      // Pre-seleccionar quien según sesión
+      selQuien = socio.nombre.toLowerCase() === 'joseph' ? 'j' : 'e';
+      selQ(selQuien, true);
+
+      // Fecha de hoy
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('fecha-pago').value = today;
+      document.getElementById('time').textContent =
+        new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+      // Cargar autos activos
+      autos = (await getAutos()).filter(a => a.status !== 'vendido');
+
+      // Si viene ?auto_id en la URL, pre-seleccionar
+      const params = new URLSearchParams(window.location.search);
+      const autoId = params.get('auto_id');
+      if (autoId) {
+        const a = autos.find(x => x.id === autoId);
+        if (a) selAuto(a);
+      }
+
+      setTipo('operacion');
+    }
+
+    window.setTipo = function(t) {
+      tipo = t;
+      selCat = null;
+      document.getElementById('tt-etapa').className = 'tt-btn' + (t === 'etapa' ? ' sel' : '');
+      document.getElementById('tt-op').className = 'tt-btn' + (t === 'operacion' ? ' sel' : '');
+      document.getElementById('cat-label').textContent = t === 'etapa' ? 'Etapa del proceso' : 'Categoría';
+      document.getElementById('cat-sheet-title').textContent = t === 'etapa' ? 'Etapa del proceso' : 'Categoría del gasto';
+      const n = document.getElementById('cat-name');
+      n.textContent = 'Seleccionar...'; n.classList.add('ph');
+      document.getElementById('cat-desc').textContent = '';
+      document.getElementById('cat-ic').style.background = 'var(--bg3)';
+      document.getElementById('cat-ic-i').className = 'ti ti-layout-grid';
+      document.getElementById('cat-ic-i').style.color = 'var(--text3)';
+      const note = document.getElementById('etapa-note');
+      const finCard = document.getElementById('fecha-fin-card');
+      if (t === 'etapa') { note.classList.remove('hidden'); finCard.style.opacity = '1'; }
+      else { note.classList.add('hidden'); finCard.style.opacity = '0.4'; }
+    };
+
+    window.openAutoSheet = function() {
+      const list = document.getElementById('auto-sheet-list');
+      list.innerHTML = autos.map(a => `
+        <button class="sheet-item${selAutoId === a.id ? ' sel' : ''}" onclick="selAuto(${JSON.stringify(a).replace(/"/g,'&quot;')})">
+          <div class="sh-ic" style="background:var(--blue-bg)"><i class="ti ti-car" style="color:var(--blue)"></i></div>
+          <div style="flex:1"><div class="sh-name">${a.anio} ${a.marca} ${a.modelo}</div><div class="sh-desc">${a.status}</div></div>
+          <i class="ti ti-check sh-check"></i>
+        </button>`).join('') || '<p style="padding:12px;color:var(--text3);font-size:13px">Sin autos activos</p>';
+      document.getElementById('auto-sheet').classList.add('show');
+    };
+
+    window.selAuto = function(a) {
+      selAutoId = a.id;
+      const n = document.getElementById('auto-name');
+      n.textContent = `${a.anio} ${a.marca} ${a.modelo}`; n.classList.remove('ph');
+      document.getElementById('auto-desc').textContent = a.vin || '';
+      document.getElementById('auto-sheet').classList.remove('show');
+    };
+
+    window.openCatSheet = function() {
+      const items = tipo === 'etapa' ? etapas : categorias;
+      document.getElementById('cat-sheet-list').innerHTML = items.map(c => `
+        <button class="sheet-item${selCat === c.id ? ' sel' : ''}" onclick="selCatFn('${c.id}')">
+          <div class="sh-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
+          <div style="flex:1"><div class="sh-name">${c.name}</div><div class="sh-desc">${c.desc}</div></div>
+          <i class="ti ti-check sh-check"></i>
+        </button>`).join('');
+      document.getElementById('cat-sheet').classList.add('show');
+    };
+
+    window.selCatFn = function(id) {
+      selCat = id;
+      const items = tipo === 'etapa' ? etapas : categorias;
+      const c = items.find(x => x.id === id);
+      const n = document.getElementById('cat-name');
+      n.textContent = c.name; n.classList.remove('ph');
+      document.getElementById('cat-desc').textContent = c.desc;
+      document.getElementById('cat-ic').style.background = c.bg;
+      document.getElementById('cat-ic-i').className = 'ti ' + c.ic;
+      document.getElementById('cat-ic-i').style.color = c.ic_c;
+      document.getElementById('cat-sheet').classList.remove('show');
+    };
+
+    window.closeSheet = function(id, e) {
+      if (e.target === document.getElementById(id))
+        document.getElementById(id).classList.remove('show');
+    };
+
+    window.selQ = function(q, silent) {
+      selQuien = q;
+      document.getElementById('qj').className = 'quien-btn' + (q === 'j' ? ' sel' : '');
+      document.getElementById('qe').className = 'quien-btn' + (q === 'e' ? ' sel' : '');
+    };
+
+    window.onFoto = function(input) {
+      const file = input.files[0];
+      if (!file) return;
+      fotoFile = file;
+      const url = URL.createObjectURL(file);
+      document.getElementById('foto-preview').src = url;
+      document.getElementById('foto-ph').style.display = 'none';
+      document.getElementById('foto-tk').style.display = 'block';
+    };
+
+    window.quitarFoto = function() {
+      fotoFile = null;
+      document.getElementById('foto-ph').style.display = 'flex';
+      document.getElementById('foto-tk').style.display = 'none';
+    };
+
+    window.guardar = async function() {
+      if (!selAutoId) { showToast('Selecciona un auto'); return; }
+      if (!selCat)    { openCatSheet(); return; }
+      const monto = parseFloat(document.getElementById('monto-inp').value);
+      if (!monto)     { document.getElementById('monto-inp').focus(); return; }
+
+      const btn = document.getElementById('guardar-btn');
+      btn.disabled = true; btn.innerHTML = '<div class="spinner"></div>Guardando...';
+
+      try {
+        let foto_url = null;
+        if (fotoFile) {
+          const path = `${selAutoId}/${Date.now()}_${fotoFile.name}`;
+          foto_url = await subirFoto(fotoFile, path);
+        }
+
+        const fecha_pago = document.getElementById('fecha-pago').value;
+        const notas = document.getElementById('nota-inp').value;
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (tipo === 'etapa') {
+          await crearEtapa({
+            auto_id: selAutoId,
+            tipo: selCat,
+            monto_mxn: monto,
+            fecha_pago,
+            notas,
+            foto_url,
+            pagado: true,
+            completado: false,
+            registrado_por: user.id,
+          });
+        } else {
+          await crearGasto({
+            auto_id: selAutoId,
+            categoria: selCat,
+            monto,
+            fecha_pago,
+            notas,
+            foto_url,
+            pagado_por: user.id,
+          });
+        }
+
+        showToast(tipo === 'etapa' ? 'Etapa registrada ✓' : 'Gasto guardado ✓');
+        setTimeout(() => history.back(), 1500);
+      } catch (e) {
+        console.error(e);
+        showToast('Error al guardar — intenta de nuevo');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-check"></i>Guardar registro';
+      }
+    };
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    init();
+  </script>
+</body>
+</html>
