@@ -7,72 +7,28 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-  <link rel="stylesheet" href="css/global.css">
   <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 24px;
-      background: #F5F5F7;
-    }
-    .login-wrap { width: 100%; max-width: 360px; }
-    .login-logo {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-    .logo-icon {
-      width: 64px; height: 64px;
-      background: #1a1a1a;
-      border-radius: 18px;
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 16px;
-    }
-    .logo-icon i { font-size: 32px; color: #fff; }
-    .logo-title  { font-size: 22px; font-weight: 500; color: #1a1a1a; }
-    .logo-sub    { font-size: 13px; color: #aaa; margin-top: 4px; }
-
-    .login-form { display: flex; flex-direction: column; gap: 12px; }
-    .login-form input {
-      width: 100%;
-      padding: 14px 16px;
-      border: 0.5px solid #e8e8e8;
-      border-radius: 14px;
-      font-size: 15px;
-      background: #fff;
-      color: #1a1a1a;
-      outline: none;
-      font-family: var(--font);
-      transition: border-color 0.15s;
-    }
-    .login-form input:focus { border-color: #1a1a1a; }
-    .login-btn {
-      width: 100%;
-      padding: 15px;
-      background: #1a1a1a;
-      color: #fff;
-      border: none;
-      border-radius: 14px;
-      font-size: 15px;
-      font-weight: 500;
-      cursor: pointer;
-      font-family: var(--font);
-      transition: opacity 0.15s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .login-btn:active { opacity: 0.8; }
-    .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .error-msg {
-      background: #FCEBEB;
-      color: #A32D2D;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 13px;
-      display: none;
-    }
-    .error-msg.show { display: block; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--font:'DM Sans',system-ui,sans-serif}
+    body{font-family:var(--font);background:#F5F5F7;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;max-width:430px;margin:0 auto}
+    .login-wrap{width:100%;max-width:360px}
+    .login-logo{text-align:center;margin-bottom:40px}
+    .logo-icon{width:64px;height:64px;background:#1a1a1a;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+    .logo-icon i{font-size:32px;color:#fff}
+    .logo-title{font-size:22px;font-weight:500;color:#1a1a1a}
+    .logo-sub{font-size:13px;color:#aaa;margin-top:4px}
+    .login-form{display:flex;flex-direction:column;gap:12px}
+    .login-form input{width:100%;padding:14px 16px;border:0.5px solid #e8e8e8;border-radius:14px;font-size:15px;background:#fff;color:#1a1a1a;outline:none;font-family:var(--font);transition:border-color 0.15s}
+    .login-form input:focus{border-color:#1a1a1a}
+    .login-btn{width:100%;padding:15px;background:#1a1a1a;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:500;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:8px}
+    .login-btn:active{opacity:0.85}
+    .login-btn:disabled{opacity:0.5;cursor:not-allowed}
+    .error-msg{background:#FCEBEB;color:#A32D2D;border-radius:10px;padding:10px 14px;font-size:13px;display:none}
+    .error-msg.show{display:block}
+    .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .fade-in{animation:fadeIn 0.25s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
   </style>
 </head>
 <body>
@@ -82,7 +38,6 @@
       <div class="logo-title">AutoImport Tepic</div>
       <div class="logo-sub">Control de autos importados</div>
     </div>
-
     <div class="login-form">
       <input type="email" id="email" placeholder="Correo electrónico" autocomplete="email">
       <input type="password" id="password" placeholder="Contraseña" autocomplete="current-password">
@@ -93,14 +48,17 @@
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
-
   <script type="module">
-    import { supabase, getSession } from './js/supabase.js';
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-    // Si ya hay sesión, redirigir al dashboard
-    getSession().then(session => {
-      if (session) window.location.href = '/pages/dashboard.html';
+    const sb = createClient(
+      'https://vxwmheehqqzybucaunkj.supabase.co',
+      'sb_publishable_-PB6IaiPNF7TPnKGhPqxMQ_dc4Gd5G5'
+    );
+
+    // Si ya hay sesión activa, ir directo a la app
+    sb.auth.getSession().then(({data:{session}}) => {
+      if (session) window.location.href = '/app.html';
     });
 
     window.login = async function() {
@@ -120,9 +78,9 @@
       errEl.classList.remove('show');
 
       try {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        window.location.href = '/pages/dashboard.html';
+        window.location.href = '/app.html';
       } catch (err) {
         errEl.textContent = 'Correo o contraseña incorrectos';
         errEl.classList.add('show');
@@ -131,7 +89,6 @@
       }
     };
 
-    // Enter para hacer login
     document.getElementById('password').addEventListener('keydown', e => {
       if (e.key === 'Enter') window.login();
     });
