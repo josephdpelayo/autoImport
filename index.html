@@ -2,7 +2,13 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AutoImport">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a1a1a">
+  <link rel="manifest" href="/manifest.json">
   <title>AutoImport Tepic</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -10,7 +16,7 @@
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     :root{--font:'DM Sans',system-ui,sans-serif}
-    body{font-family:var(--font);background:#F5F5F7;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;max-width:430px;margin:0 auto}
+    body{font-family:var(--font);background:#F5F5F7;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:-webkit-fill-available;padding:24px;padding-top:calc(24px + env(safe-area-inset-top));padding-bottom:calc(24px + env(safe-area-inset-bottom));max-width:430px;margin:0 auto}
     .login-wrap{width:100%;max-width:360px}
     .login-logo{text-align:center;margin-bottom:40px}
     .logo-icon{width:64px;height:64px;background:#1a1a1a;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
@@ -47,51 +53,27 @@
       </button>
     </div>
   </div>
-
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-    const sb = createClient(
-      'https://vxwmheehqqzybucaunkj.supabase.co',
-      'sb_publishable_-PB6IaiPNF7TPnKGhPqxMQ_dc4Gd5G5'
-    );
-
-    // Si ya hay sesión activa, ir directo a la app
-    sb.auth.getSession().then(({data:{session}}) => {
-      if (session) window.location.href = '/app.html';
-    });
-
+    const sb = createClient('https://vxwmheehqqzybucaunkj.supabase.co','sb_publishable_-PB6IaiPNF7TPnKGhPqxMQ_dc4Gd5G5');
+    sb.auth.getSession().then(({data:{session}}) => { if(session) window.location.href='/app.html'; });
     window.login = async function() {
-      const email    = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const btn      = document.getElementById('login-btn');
-      const errEl    = document.getElementById('error-msg');
-
-      if (!email || !password) {
-        errEl.textContent = 'Ingresa tu correo y contraseña';
-        errEl.classList.add('show');
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerHTML = '<div class="spinner"></div>Entrando...';
-      errEl.classList.remove('show');
-
-      try {
-        const { error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        window.location.href = '/app.html';
-      } catch (err) {
-        errEl.textContent = 'Correo o contraseña incorrectos';
-        errEl.classList.add('show');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="ti ti-login"></i>Entrar';
+      const email=document.getElementById('email').value.trim();
+      const password=document.getElementById('password').value;
+      const btn=document.getElementById('login-btn');
+      const errEl=document.getElementById('error-msg');
+      if(!email||!password){errEl.textContent='Ingresa tu correo y contraseña';errEl.classList.add('show');return;}
+      btn.disabled=true;btn.innerHTML='<div class="spinner"></div>Entrando...';errEl.classList.remove('show');
+      try{
+        const{error}=await sb.auth.signInWithPassword({email,password});
+        if(error) throw error;
+        window.location.href='/app.html';
+      }catch(err){
+        errEl.textContent='Correo o contraseña incorrectos';errEl.classList.add('show');
+        btn.disabled=false;btn.innerHTML='<i class="ti ti-login"></i>Entrar';
       }
     };
-
-    document.getElementById('password').addEventListener('keydown', e => {
-      if (e.key === 'Enter') window.login();
-    });
+    document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')window.login();});
   </script>
 </body>
 </html>
