@@ -1122,14 +1122,34 @@
   </div>
 </div>
 
-<!-- Completar etapa -->
-<div class="sheet-overlay" id="etapa-fin-sheet" onclick="closeSheet('etapa-fin-sheet',event)">
+<!-- Editar etapa -->
+<div class="sheet-overlay" id="etapa-sheet" onclick="closeSheet('etapa-sheet',event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">Fecha de finalización</div>
-    <input type="hidden" id="etapa-fin-id">
-    <div class="field"><label>¿Cuándo se completó esta etapa?</label><input type="date" id="etapa-fin-fecha"></div>
-    <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="confirmarEtapaFin()"><i class="ti ti-check"></i>Confirmar</button>
+    <div class="sheet-title" id="es-titulo">Etapa</div>
+    <input type="hidden" id="es-id">
+    <input type="hidden" id="es-tipo">
+    <input type="hidden" id="es-auto-id">
+    <div class="field">
+      <label>Monto (MXN)</label>
+      <input type="number" id="es-monto" placeholder="0" inputmode="decimal">
+    </div>
+    <div class="field" id="es-inicio-wrap">
+      <label id="es-inicio-label">Fecha de pago</label>
+      <input type="date" id="es-fecha-inicio">
+    </div>
+    <div class="field" id="es-fin-wrap">
+      <label id="es-fin-label">Fecha de finalización</label>
+      <input type="date" id="es-fecha-fin">
+    </div>
+    <div id="es-completado-wrap" style="display:flex;align-items:center;gap:10px;background:var(--green-bg);border-radius:10px;padding:12px;margin-bottom:14px;cursor:pointer" onclick="document.getElementById('es-completado').click()">
+      <input type="checkbox" id="es-completado" style="width:18px;height:18px;cursor:pointer">
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--green)">Marcar como completada</div>
+        <div style="font-size:11px;color:var(--text3)">La etapa quedó finalizada</div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="guardarEtapa()"><i class="ti ti-check"></i>Guardar etapa</button>
     <div style="height:8px"></div>
   </div>
 </div>
@@ -1456,6 +1476,7 @@ window.openDetalle = async function(id) {
 
   // Etapas timeline
   const etapas = await fetchEtapas(id);
+  window._etapasActuales = etapas;
   const etapaIds = ['compra','transporte_usa','importacion','transporte_tepic'];
   let tlHtml = '';
   etapaIds.forEach((eid,i)=>{
@@ -1466,7 +1487,10 @@ window.openDetalle = async function(id) {
     const isLast = i===etapaIds.length-1;
     const dotCls = isDone?'done':isPagado?'activo':'pending';
     const lineCls = isDone?'done':'';
-    tlHtml += `<div class="tl-item">
+    const eId = e?.id||'';
+    const eTipo = eid;
+    const autoIdParam = a.id;
+    tlHtml += `<div class="tl-item" onclick="abrirEtapaSheet('${eId}','${eTipo}','${autoIdParam}')" style="cursor:pointer">
       <div class="tl-left">
         <div class="tl-dot ${dotCls}"><i class="ti ${cfg.ic}"></i></div>
         ${!isLast?`<div class="tl-line ${lineCls}"></div>`:''}
@@ -1475,12 +1499,14 @@ window.openDetalle = async function(id) {
         <div class="tl-row">
           <div>
             <div class="tl-name ${isPagado?'':'pending'}">${cfg.name}</div>
-            <div class="tl-sub">${e?.fecha_pago?`Pagado: ${e.fecha_pago}`:'Pendiente'}</div>
+            <div class="tl-sub">${e?.fecha_pago?`Inicio: ${e.fecha_pago}`:'Sin registrar'}</div>
           </div>
-          <div class="tl-monto ${isPagado?'':'pending'}">${e?fmt(e.monto_mxn):'—'}</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <div class="tl-monto ${isPagado?'':'pending'}">${e?fmt(e.monto_mxn):'—'}</div>
+            <i class="ti ti-chevron-right" style="font-size:14px;color:var(--text3)"></i>
+          </div>
         </div>
-        ${e?.fecha_pago&&!isDone?`<span class="tl-dias-pill activo"><i class="ti ti-clock" style="font-size:10px"></i>Finalizacion pendiente — <span onclick="completarEtapa('${e.id}')" style="text-decoration:underline;cursor:pointer">marcar como completado</span></span>`:''}
-        ${isDone&&e?.fecha_finalizacion?`<span class="tl-dias-pill"><i class="ti ti-check" style="font-size:10px"></i>Completado: ${e.fecha_finalizacion}</span>`:''}
+        ${isDone?`<span class="tl-dias-pill"><i class="ti ti-check" style="font-size:10px"></i>Fin: ${e.fecha_finalizacion}</span>`:isPagado?`<span class="tl-dias-pill activo"><i class="ti ti-clock" style="font-size:10px"></i>En proceso — toca para completar</span>`:'<span class="tl-dias-pill" style="color:var(--text3)"><i class="ti ti-plus" style="font-size:10px"></i>Toca para registrar</span>'}
       </div>
     </div>`;
   });
@@ -1580,20 +1606,76 @@ window.openDetalle = async function(id) {
   document.getElementById('det-liq-btn').innerHTML = liqHtml;
 };
 
-window.completarEtapa = function(etapaId) {
-  document.getElementById('etapa-fin-id').value = etapaId;
-  document.getElementById('etapa-fin-fecha').value = today();
-  openSheet('etapa-fin-sheet');
+window.abrirEtapaSheet = function(etapaId, tipo, autoId) {
+  const cfg = etapaInfo(tipo);
+  const etapa = window._etapasActuales?.find(e=>e.id===etapaId)||null;
+  document.getElementById('es-id').value = etapaId||'';
+  document.getElementById('es-tipo').value = tipo;
+  document.getElementById('es-auto-id').value = autoId;
+  document.getElementById('es-titulo').textContent = cfg.name;
+  document.getElementById('es-fecha-inicio').value = etapa?.fecha_pago||today();
+  document.getElementById('es-fecha-fin').value = etapa?.fecha_finalizacion||'';
+  document.getElementById('es-completado').checked = etapa?.completado||false;
+  document.getElementById('es-monto').value = etapa?.monto_mxn||'';
+
+  // Mostrar/ocultar campos según tipo de etapa
+  const soloInicio = tipo === 'compra';
+  const soloFin = tipo === 'venta';
+
+  document.getElementById('es-inicio-wrap').style.display = soloFin ? 'none' : 'block';
+  document.getElementById('es-fin-wrap').style.display = soloInicio ? 'none' : 'block';
+  document.getElementById('es-completado-wrap').style.display = soloInicio || soloFin ? 'none' : 'flex';
+
+  // Labels personalizados
+  if(tipo === 'compra') {
+    document.getElementById('es-inicio-label').textContent = 'Fecha de compra';
+  } else if(tipo === 'transporte_usa') {
+    document.getElementById('es-inicio-label').textContent = 'Fecha de pago del flete';
+    document.getElementById('es-fin-label').textContent = 'Fecha de llegada a frontera';
+  } else if(tipo === 'importacion') {
+    document.getElementById('es-inicio-label').textContent = 'Fecha de pago de importación';
+    document.getElementById('es-fin-label').textContent = 'Fecha en que quedó lista';
+  } else if(tipo === 'transporte_tepic') {
+    document.getElementById('es-inicio-label').textContent = 'Fecha de pago del flete';
+    document.getElementById('es-fin-label').textContent = 'Fecha de llegada a Tepic';
+  }
+
+  document.getElementById('etapa-sheet').classList.add('show');
 };
 
-window.confirmarEtapaFin = async function() {
-  const etapaId = document.getElementById('etapa-fin-id').value;
-  const fecha = document.getElementById('etapa-fin-fecha').value;
-  if(!fecha) return;
+window.guardarEtapa = async function() {
+  const etapaId = document.getElementById('es-id').value;
+  const tipo = document.getElementById('es-tipo').value;
+  const autoId = document.getElementById('es-auto-id').value;
+  const fechaInicio = document.getElementById('es-fecha-inicio').value;
+  const fechaFin = document.getElementById('es-fecha-fin').value;
+  const completado = document.getElementById('es-completado').checked;
+  const monto = parseFloat(document.getElementById('es-monto').value)||0;
   try {
-    await sb.from('etapas_auto').update({fecha_finalizacion:fecha,completado:true}).eq('id',etapaId);
-    document.getElementById('etapa-fin-sheet').classList.remove('show');
-    showToast('Etapa completada ✓');
+    if(etapaId) {
+      // Actualizar etapa existente
+      await sb.from('etapas_auto').update({
+        fecha_pago: fechaInicio||null,
+        fecha_finalizacion: fechaFin||null,
+        completado: completado,
+        monto_mxn: monto||undefined,
+        pagado: true,
+      }).eq('id',etapaId);
+    } else {
+      // Crear nueva etapa
+      await sb.from('etapas_auto').insert({
+        auto_id: autoId,
+        tipo: tipo,
+        monto_mxn: monto,
+        fecha_pago: fechaInicio||null,
+        fecha_finalizacion: fechaFin||null,
+        completado: completado,
+        pagado: true,
+        registrado_por: sesion.user.id,
+      });
+    }
+    document.getElementById('etapa-sheet').classList.remove('show');
+    showToast('Etapa guardada ✓');
     if(autoActual) openDetalle(autoActual.id);
   } catch(e) { showToast('Error: '+e.message); }
 };
