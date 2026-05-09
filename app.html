@@ -1340,9 +1340,12 @@ async function fetchEtapas(autoId) {
   return data||[];
 }
 async function fetchGastos(autoId) {
-  const {data,error} = await sb.from('gastos').select('*,socios(nombre)').eq('auto_id',autoId).order('fecha_pago',{ascending:false});
+  const {data,error} = await sb.from('gastos').select('*').eq('auto_id',autoId).order('fecha_pago',{ascending:false});
   if(error) throw error;
-  return data||[];
+  const {data:socsData} = await sb.from('socios').select('id,nombre');
+  const socMap = {};
+  socsData?.forEach(s => socMap[s.id] = s.nombre);
+  return (data||[]).map(g => ({...g, socios:{nombre: socMap[g.pagado_por]||'—'}}));
 }
 async function fetchMovimientos() {
   const {data,error} = await sb.from('movimientos_caja').select('*,socios(nombre),autos(marca,modelo,anio)').order('created_at',{ascending:false}).limit(10);
