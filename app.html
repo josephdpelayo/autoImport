@@ -2189,6 +2189,34 @@ function stopReception(){
   stopReceptionWorker();
   receptionLoading=false;
 }
+function stopReceptionWorker(){
+  if(window._receptionWorker){
+    window._receptionWorker.postMessage('stop');
+    window._receptionWorker.terminate();
+    window._receptionWorker=null;
+  }
+}
+function startReceptionWorker(){
+  stopReceptionWorker();
+  // Web Worker runs in a separate thread — browser never throttles it
+  // even when the tab is backgrounded (TV always on)
+  const workerCode=`
+    let t=null;
+    self.onmessage=function(e){
+      if(e.data==='start'){
+        if(t)clearInterval(t);
+        t=setInterval(()=>self.postMessage('tick'),15000);
+      }
+      if(e.data==='stop'){if(t){clearInterval(t);t=null;}}
+    };
+  `;
+  const blob=new Blob([workerCode],{type:'application/javascript'});
+  window._receptionWorker=new Worker(URL.createObjectURL(blob));
+  window._receptionWorker.onmessage=()=>{
+    if(!receptionLoading) loadReceptionSessions();
+  };
+  window._receptionWorker.postMessage('start');
+}
 
 function showReception(){
   if(accInt){clearInterval(accInt);accInt=null;}
@@ -2203,39 +2231,7 @@ function showReception(){
   if(receptionClockInt)clearInterval(receptionClockInt);
   if(receptionDataInt)clearInterval(receptionDataInt);
   receptionClockInt=setInterval(()=>{updateReceptionClock();renderReceptionList();},1000);
-  // Use a Web Worker for the data interval so the browser never throttles it
-  // even when the tab is in background (TV screen always on but not focused)
   startReceptionWorker();
-}
-
-function startReceptionWorker(){
-  stopReceptionWorker();
-  // Inline worker via Blob — no extra file needed
-  const workerCode=`
-    let t=null;
-    self.onmessage=function(e){
-      if(e.data==='start'){
-        if(t)clearInterval(t);
-        t=setInterval(()=>self.postMessage('tick'),30000);
-      }
-      if(e.data==='stop'){
-        if(t)clearInterval(t);
-        t=null;
-      }
-    };
-  `;
-  const blob=new Blob([workerCode],{type:'application/javascript'});
-  window._receptionWorker=new Worker(URL.createObjectURL(blob));
-  window._receptionWorker.onmessage=()=>loadReceptionSessions();
-  window._receptionWorker.postMessage('start');
-}
-
-function stopReceptionWorker(){
-  if(window._receptionWorker){
-    window._receptionWorker.postMessage('stop');
-    window._receptionWorker.terminate();
-    window._receptionWorker=null;
-  }
 }
 
 function updateReceptionClock(){
@@ -2352,7 +2348,8 @@ function renderReceptionList(errorMsg){
 }
 
 async function loadReceptionSessions(){
-  if(receptionLoading||!sbUser)return;
+  if(!sbUser)return;
+  if(receptionLoading)return; // already fetching, skip this tick
   receptionLoading=true;
   try{
     const{data:sessionData}=await sb.auth.getSession();
