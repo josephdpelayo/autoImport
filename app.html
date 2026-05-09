@@ -1122,6 +1122,31 @@
   </div>
 </div>
 
+<!-- Completar etapa -->
+<div class="sheet-overlay" id="etapa-fin-sheet" onclick="closeSheet('etapa-fin-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Fecha de finalización</div>
+    <input type="hidden" id="etapa-fin-id">
+    <div class="field"><label>¿Cuándo se completó esta etapa?</label><input type="date" id="etapa-fin-fecha"></div>
+    <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="confirmarEtapaFin()"><i class="ti ti-check"></i>Confirmar</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- Reparaciones completadas -->
+<div class="sheet-overlay" id="rep-sheet" onclick="closeSheet('rep-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Reparaciones completadas</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">El auto pasará a estado <strong>En venta</strong>.</p>
+    <input type="hidden" id="rep-auto-id">
+    <div class="field"><label>Fecha en que quedó listo</label><input type="date" id="rep-fecha"></div>
+    <button class="btn btn-full" style="background:var(--orange);color:#fff;margin-top:8px" onclick="confirmarReparaciones()"><i class="ti ti-check"></i>Confirmar — pasar a En venta</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
 <!-- Logout confirm -->
 <div class="sheet-overlay" id="logout-sheet" onclick="closeSheet('logout-sheet',event)">
   <div class="sheet">
@@ -1542,18 +1567,54 @@ window.openDetalle = async function(id) {
       </div>
     </div>`;
 
-  // Botón liquidar si no está vendido
-  document.getElementById('det-liq-btn').innerHTML = a.status!=='vendido'
-    ? `<button class="btn btn-green btn-full" onclick="openLiqSheet('${a.id}')"><i class="ti ti-currency-dollar"></i>Liquidar venta</button>`
-    : '';
+  // Botones de acción según status
+  let liqHtml = '';
+  if(a.status === 'taller') {
+    liqHtml = `
+      <button class="btn btn-full" style="background:var(--orange);color:#fff;margin-bottom:8px" onclick="marcarReparacionesListas('${a.id}')">
+        <i class="ti ti-check"></i>Reparaciones listas — pasar a En venta
+      </button>`;
+  } else if(a.status === 'en_venta') {
+    liqHtml = `<button class="btn btn-green btn-full" onclick="openLiqSheet('${a.id}')"><i class="ti ti-currency-dollar"></i>Liquidar venta</button>`;
+  }
+  document.getElementById('det-liq-btn').innerHTML = liqHtml;
 };
 
-window.completarEtapa = async function(etapaId) {
-  const fecha = prompt('Fecha de finalización (YYYY-MM-DD):',today());
+window.completarEtapa = function(etapaId) {
+  document.getElementById('etapa-fin-id').value = etapaId;
+  document.getElementById('etapa-fin-fecha').value = today();
+  openSheet('etapa-fin-sheet');
+};
+
+window.confirmarEtapaFin = async function() {
+  const etapaId = document.getElementById('etapa-fin-id').value;
+  const fecha = document.getElementById('etapa-fin-fecha').value;
   if(!fecha) return;
-  await sb.from('etapas_auto').update({fecha_finalizacion:fecha,completado:true}).eq('id',etapaId);
-  showToast('Etapa completada ✓');
-  if(autoActual) openDetalle(autoActual.id);
+  try {
+    await sb.from('etapas_auto').update({fecha_finalizacion:fecha,completado:true}).eq('id',etapaId);
+    document.getElementById('etapa-fin-sheet').classList.remove('show');
+    showToast('Etapa completada ✓');
+    if(autoActual) openDetalle(autoActual.id);
+  } catch(e) { showToast('Error: '+e.message); }
+};
+
+window.marcarReparacionesListas = function(autoId) {
+  document.getElementById('rep-auto-id').value = autoId;
+  document.getElementById('rep-fecha').value = today();
+  openSheet('rep-sheet');
+};
+
+window.confirmarReparaciones = async function() {
+  const autoId = document.getElementById('rep-auto-id').value;
+  const fecha = document.getElementById('rep-fecha').value;
+  if(!fecha) return;
+  try {
+    await sb.from('autos').update({status:'en_venta'}).eq('id',autoId);
+    document.getElementById('rep-sheet').classList.remove('show');
+    showToast('Auto marcado en venta ✓');
+    await fetchAutos();
+    if(autoActual) openDetalle(autoActual.id);
+  } catch(e) { showToast('Error: '+e.message); }
 };
 
 // ── Nuevo Auto ─────────────────────────────────────────────────
