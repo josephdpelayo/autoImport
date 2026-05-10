@@ -1180,6 +1180,19 @@
   </div>
 </div>
 
+<!-- Gastos por categoría list -->
+<div class="sheet-overlay" id="gcat-sheet" onclick="closeSheet('gcat-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 4px 12px">
+      <div class="sheet-title" style="padding:0" id="gcl-titulo">Categoría</div>
+      <div style="font-size:14px;font-weight:500;color:var(--text1)" id="gcl-total"></div>
+    </div>
+    <div id="gcl-lista"></div>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
 <!-- Detalle de gasto -->
 <div class="sheet-overlay" id="gasto-detalle-sheet" onclick="closeSheet('gasto-detalle-sheet',event)">
   <div class="sheet">
@@ -1209,6 +1222,9 @@
       </div>
     </div>
     <div id="gd-foto" style="margin-bottom:10px"></div>
+    <button class="btn btn-secondary btn-full" onclick="editarGastoActual()" style="margin-bottom:8px">
+      <i class="ti ti-edit"></i>Editar este gasto
+    </button>
     <div style="height:8px"></div>
   </div>
 </div>
@@ -1523,6 +1539,10 @@ window.openDetalle = async function(id) {
   // Etapas timeline
   const etapas = await fetchEtapas(id);
   window._etapasActuales = etapas;
+  updateEtapaResumen(a, etapas);
+  etapasExpanded = false;
+  document.getElementById('det-timeline-wrap').style.display='none';
+  document.getElementById('det-etapa-chevron').style.transform='rotate(0deg)';
   const etapaIds = ['compra','transporte_usa','importacion','transporte_tepic'];
   let tlHtml = '';
   etapaIds.forEach((eid,i)=>{
@@ -1597,20 +1617,22 @@ window.openDetalle = async function(id) {
   const distLabel = a.dist_ganancia==='50_50'?'50% gan.':a.dist_ganancia==='100_joseph'?'100% gan.':'—';
   const distLabelE = a.dist_ganancia==='50_50'?'50% gan.':a.dist_ganancia==='100_emmanuel'?'100% gan.':'—';
   document.getElementById('det-aportes').innerHTML = `
-    <div style="background:var(--blue-bg);border-radius:12px;padding:10px">
-      <div style="font-size:10px;font-weight:500;color:var(--blue);margin-bottom:4px">Joseph</div>
-      <div style="font-size:13px;font-weight:500;color:var(--blue)">${fmt(a.aporte_joseph||0)}</div>
-      <div style="font-size:10px;color:var(--blue);margin-top:2px">${distLabel}</div>
-    </div>
-    <div style="background:var(--green-bg);border-radius:12px;padding:10px">
-      <div style="font-size:10px;font-weight:500;color:var(--green);margin-bottom:4px">Emmanuel</div>
-      <div style="font-size:13px;font-weight:500;color:var(--green)">${fmt(a.aporte_emmanuel||0)}</div>
-      <div style="font-size:10px;color:var(--green);margin-top:2px">${distLabelE}</div>
-    </div>
-    <div style="background:var(--purple-bg);border-radius:12px;padding:10px">
-      <div style="font-size:10px;font-weight:500;color:var(--purple);margin-bottom:4px">Préstamo</div>
-      <div style="font-size:13px;font-weight:500;color:var(--purple)">${a.usa_prestamo?'$100,000':'No aplica'}</div>
-      <div style="font-size:10px;color:var(--purple);margin-top:2px">Slot papá</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div style="background:var(--blue-bg);border-radius:12px;padding:10px">
+        <div style="font-size:10px;font-weight:500;color:var(--blue);margin-bottom:4px">Joseph</div>
+        <div style="font-size:13px;font-weight:500;color:var(--blue)">${fmt(a.aporte_joseph||0)}</div>
+        <div style="font-size:10px;color:var(--blue);margin-top:2px">${distLabel}</div>
+      </div>
+      <div style="background:var(--green-bg);border-radius:12px;padding:10px">
+        <div style="font-size:10px;font-weight:500;color:var(--green);margin-bottom:4px">Emmanuel</div>
+        <div style="font-size:13px;font-weight:500;color:var(--green)">${fmt(a.aporte_emmanuel||0)}</div>
+        <div style="font-size:10px;color:var(--green);margin-top:2px">${distLabelE}</div>
+      </div>
+      <div style="background:var(--purple-bg);border-radius:12px;padding:10px">
+        <div style="font-size:10px;font-weight:500;color:var(--purple);margin-bottom:4px">Préstamo</div>
+        <div style="font-size:13px;font-weight:500;color:var(--purple)">${a.usa_prestamo?'$100,000':'No aplica'}</div>
+        <div style="font-size:10px;color:var(--purple);margin-top:2px">Slot papá</div>
+      </div>
     </div>`;
 
   // Gastos
@@ -1665,9 +1687,35 @@ window.openDetalle = async function(id) {
   document.getElementById('det-liq-btn').innerHTML = liqHtml;
 };
 
+window._gastoActualIdx = null;
+window.editarGastoActual = function() {
+  const g = window._gastosActuales[window._gastoActualIdx];
+  if(!g) return;
+  // Pre-fill gasto form with existing data
+  gAutoId = g.auto_id;
+  gTipo = 'operacion';
+  gCat = g.categoria;
+  gQuien = g.pagado_por === (window._socioJosephId||'') ? 'j' : 'e';
+  document.getElementById('g-monto').value = g.monto;
+  document.getElementById('g-nota').value = g.notas||'';
+  document.getElementById('g-fecha').value = g.fecha_pago||today();
+  if(document.getElementById('g-proveedor')) document.getElementById('g-proveedor').value = g.proveedor||'';
+  document.getElementById('gasto-detalle-sheet').classList.remove('show');
+  // Store ID for update
+  window._editandoGastoId = g.id;
+  goScreen('gasto');
+  setTimeout(()=>{
+    gSetTipo('operacion');
+    gSelCat(g.categoria);
+    gSelAutoById(g.auto_id);
+    gSelQ(gQuien);
+  },150);
+};
+
 window.abrirGastoDetalle = function(idx) {
   const g = window._gastosActuales[idx];
   if(!g) return;
+  window._gastoActualIdx = idx;
   const c = catInfo(g.categoria);
   document.getElementById('gd-titulo').textContent = c.name;
   document.getElementById('gd-monto').textContent = fmt(g.monto);
