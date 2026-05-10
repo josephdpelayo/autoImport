@@ -1558,7 +1558,6 @@ window.openDetalle = async function(id) {
   const etapas = await fetchEtapas(id);
   window._etapasActuales = etapas;
   updateEtapaResumen(a);
-  etapasExpanded = false;
   document.getElementById('det-timeline-wrap').style.display='none';
   document.getElementById('det-etapa-chevron').style.transform='rotate(0deg)';
   const etapaIds = ['compra','transporte_usa','importacion','transporte_tepic'];
