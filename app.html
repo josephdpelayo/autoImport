@@ -1557,7 +1557,7 @@ window.openDetalle = async function(id) {
   // Etapas timeline
   const etapas = await fetchEtapas(id);
   window._etapasActuales = etapas;
-  updateEtapaResumen(a, etapas);
+  updateEtapaResumen(a);
   etapasExpanded = false;
   document.getElementById('det-timeline-wrap').style.display='none';
   document.getElementById('det-etapa-chevron').style.transform='rotate(0deg)';
@@ -1752,6 +1752,80 @@ window.abrirGastoDetalle = function(idx) {
   document.getElementById('gd-ic').querySelector('i').className = 'ti ' + c.ic;
   document.getElementById('gd-ic').querySelector('i').style.color = c.ic_c;
   openSheet('gasto-detalle-sheet');
+};
+
+window.toggleEtapas = function() {
+  const wrap = document.getElementById('det-timeline-wrap');
+  const ch = document.getElementById('det-etapa-chevron');
+  if(!wrap) return;
+  const open = wrap.style.display === 'block';
+  wrap.style.display = open ? 'none' : 'block';
+  if(ch) ch.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+};
+
+window.updateEtapaResumen = function(a) {
+  const statusMap = {
+    comprado:{label:'Compra registrada',sub:'Pendiente de transporte',ic:'ti-building-store',color:'var(--blue)'},
+    transporte_usa:{label:'En tránsito USA-Frontera',sub:'Camino a la frontera',ic:'ti-truck',color:'var(--orange)'},
+    importacion:{label:'En importación',sub:'Trámites aduanales',ic:'ti-file-certificate',color:'var(--purple)'},
+    transporte_tepic:{label:'En camino a Tepic',sub:'Flete a Tepic',ic:'ti-map-pin',color:'var(--green)'},
+    taller:{label:'En taller',sub:'Reparaciones y detallado',ic:'ti-tool',color:'var(--red)'},
+    en_venta:{label:'En venta',sub:'Buscando comprador',ic:'ti-tag',color:'var(--orange)'},
+    vendido:{label:'Vendido',sub:'Operación completada',ic:'ti-check',color:'var(--green)'},
+  };
+  const curr = statusMap[a.status]||{label:a.status,sub:'',ic:'ti-car',color:'var(--text1)'};
+  const el = document.getElementById('det-etapa-actual');
+  const sub = document.getElementById('det-etapa-sub');
+  const dot = document.getElementById('det-etapa-dot');
+  if(el) el.textContent = curr.label;
+  if(sub) sub.textContent = curr.sub;
+  if(dot){ dot.style.background=curr.color; const i=dot.querySelector('i'); if(i) i.className='ti '+curr.ic; }
+  const wrap = document.getElementById('det-timeline-wrap');
+  const ch = document.getElementById('det-etapa-chevron');
+  if(wrap) wrap.style.display='none';
+  if(ch) ch.style.transform='rotate(0deg)';
+};
+
+window.verGastosPorCat = function(catId) {
+  const gastos=(window._gastosActuales||[]).filter(g=>g.categoria===catId);
+  const c=catInfo(catId);
+  const t=document.getElementById('gcl-titulo');
+  const l=document.getElementById('gcl-lista');
+  const tot=document.getElementById('gcl-total');
+  if(t) t.textContent=c.name;
+  if(tot) tot.textContent=fmt(gastos.reduce((s,g)=>s+g.monto,0));
+  if(l) l.innerHTML=gastos.map(g=>{
+    const idx=(window._gastosActuales||[]).indexOf(g);
+    return `<div class="gasto-item" onclick="abrirGastoDetalle(${idx})" style="cursor:pointer">
+      <div class="g-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
+      <div class="g-body">
+        <div class="g-cat">${g.notas||'Sin descripción'}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px"><i class="ti ti-calendar" style="font-size:10px"></i> ${g.fecha_pago||'—'} · ${g.socios?.nombre||'—'}${g.proveedor?` · ${g.proveedor}`:''}</div>
+      </div>
+      <div class="g-right"><div class="g-monto">${fmt(g.monto)}</div><i class="ti ti-chevron-right" style="font-size:14px;color:var(--text3)"></i></div>
+    </div>`;}).join('');
+  openSheet('gcat-sheet');
+};
+
+window.verTodosGastos = function() {
+  const gastos=window._gastosActuales||[];
+  const t=document.getElementById('gcl-titulo');
+  const l=document.getElementById('gcl-lista');
+  const tot=document.getElementById('gcl-total');
+  if(t) t.textContent='Todos los gastos';
+  if(tot) tot.textContent=fmt(gastos.reduce((s,g)=>s+g.monto,0));
+  if(l) l.innerHTML=gastos.map((g,idx)=>{
+    const c=catInfo(g.categoria);
+    return `<div class="gasto-item" onclick="abrirGastoDetalle(${idx})" style="cursor:pointer">
+      <div class="g-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
+      <div class="g-body">
+        <div class="g-cat">${c.name}${g.proveedor?` · ${g.proveedor}`:''}</div>
+        <div class="g-nota">${g.notas||''}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px"><i class="ti ti-calendar" style="font-size:10px"></i> ${g.fecha_pago||'—'} · ${g.socios?.nombre||'—'}</div>
+      </div>
+      <div class="g-right"><div class="g-monto">${fmt(g.monto)}</div><i class="ti ti-chevron-right" style="font-size:14px;color:var(--text3)"></i></div>
+    </div>`;}).join('');
+  openSheet('gcat-sheet');
 };
 
 window.abrirEtapaSheet = function(etapaId, tipo, autoId) {
