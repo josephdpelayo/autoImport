@@ -1180,6 +1180,39 @@
   </div>
 </div>
 
+<!-- Detalle de gasto -->
+<div class="sheet-overlay" id="gasto-detalle-sheet" onclick="closeSheet('gasto-detalle-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 4px 12px">
+      <div id="gd-ic" style="width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i style="font-size:20px"></i>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:500" id="gd-titulo">—</div>
+        <div style="font-size:12px;color:var(--text3)" id="gd-fecha">—</div>
+      </div>
+      <div style="font-size:20px;font-weight:500;color:var(--text1)" id="gd-monto">—</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:12px;padding:12px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;justify-content:space-between;font-size:13px">
+        <span style="color:var(--text3)">Pagó</span>
+        <span class="fw-500" id="gd-quien">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px" id="gd-proveedor-row">
+        <span style="color:var(--text3)">Proveedor</span>
+        <span class="fw-500" id="gd-proveedor">—</span>
+      </div>
+      <div style="font-size:13px">
+        <div style="color:var(--text3);margin-bottom:4px">Descripción</div>
+        <div class="fw-500" id="gd-nota">—</div>
+      </div>
+    </div>
+    <div id="gd-foto" style="margin-bottom:10px"></div>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
 <!-- Logout confirm -->
 <div class="sheet-overlay" id="logout-sheet" onclick="closeSheet('logout-sheet',event)">
   <div class="sheet">
@@ -1629,6 +1662,28 @@ window.openDetalle = async function(id) {
     liqHtml = `<button class="btn btn-green btn-full" onclick="openLiqSheet('${a.id}')"><i class="ti ti-currency-dollar"></i>Liquidar venta</button>`;
   }
   document.getElementById('det-liq-btn').innerHTML = liqHtml;
+};
+
+window.abrirGastoDetalle = function(el) {
+  const g = JSON.parse(el.dataset.gasto);
+  const c = catInfo(g.categoria);
+  document.getElementById('gd-titulo').textContent = c.name;
+  document.getElementById('gd-monto').textContent = fmt(g.monto);
+  document.getElementById('gd-fecha').textContent = g.fecha_pago||'—';
+  document.getElementById('gd-quien').textContent = g.socios?.nombre||'—';
+  document.getElementById('gd-nota').textContent = g.notas||'Sin descripción';
+  document.getElementById('gd-proveedor').textContent = g.proveedor||'No especificado';
+  document.getElementById('gd-proveedor-row').style.display = g.proveedor?'flex':'none';
+  const fotoEl = document.getElementById('gd-foto');
+  if(g.foto_url){
+    fotoEl.innerHTML = `<img src="${g.foto_url}" style="width:100%;border-radius:10px;max-height:200px;object-fit:cover" onclick="window.open('${g.foto_url}','_blank')">`;
+  } else {
+    fotoEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px"><i class="ti ti-photo-off" style="font-size:24px;display:block;margin-bottom:6px"></i>Sin comprobante</div>';
+  }
+  document.getElementById('gd-ic').style.background = c.bg;
+  document.getElementById('gd-ic').querySelector('i').className = 'ti ' + c.ic;
+  document.getElementById('gd-ic').querySelector('i').style.color = c.ic_c;
+  openSheet('gasto-detalle-sheet');
 };
 
 window.abrirEtapaSheet = function(etapaId, tipo, autoId) {
@@ -2106,6 +2161,7 @@ window.gGuardar = async function(){
         registrado_por:sesion.user.id,
       });
     }
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i>Guardar registro';
     showToast(gTipo==='etapa'?'Etapa registrada ✓':'Gasto guardado ✓');
     setTimeout(()=>{
       if(autoActual&&gAutoId===autoActual.id){openDetalle(autoActual.id);goScreen('detalle');}
