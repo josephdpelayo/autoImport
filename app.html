@@ -1615,8 +1615,9 @@ window.openDetalle = async function(id) {
 
   // Gastos
   const gastos = await fetchGastos(id);
+  window._gastosActuales = gastos;
   document.getElementById('det-gastos').innerHTML = gastos.length
-    ? gastos.map(g=>{
+    ? gastos.map((g,idx)=>{
         const c=catInfo(g.categoria);
         return `<div class="gasto-item">
           <div class="g-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
@@ -1664,8 +1665,9 @@ window.openDetalle = async function(id) {
   document.getElementById('det-liq-btn').innerHTML = liqHtml;
 };
 
-window.abrirGastoDetalle = function(el) {
-  const g = JSON.parse(el.dataset.gasto);
+window.abrirGastoDetalle = function(idx) {
+  const g = window._gastosActuales[idx];
+  if(!g) return;
   const c = catInfo(g.categoria);
   document.getElementById('gd-titulo').textContent = c.name;
   document.getElementById('gd-monto').textContent = fmt(g.monto);
