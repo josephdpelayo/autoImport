@@ -836,7 +836,11 @@
         <input class="monto-inp" type="number" inputmode="decimal" placeholder="0" id="g-monto">
       </div>
       <div class="monto-div"></div>
-      <textarea class="nota-inp" id="g-nota" placeholder="Nota opcional..." rows="2"></textarea>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:5px">Descripción <span style="color:var(--red)">*</span></div>
+      <textarea class="nota-inp" id="g-nota" placeholder="¿En qué fue este gasto?" rows="2"></textarea>
+      <div class="monto-div"></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:5px">Proveedor <span style="font-size:10px;font-weight:400">· opcional</span></div>
+      <input style="width:100%;border:none;background:none;font-size:14px;color:var(--text1);outline:none;font-family:var(--font)" type="text" id="g-proveedor" placeholder="Ej: Taller Ramírez, AutoPartes López...">
     </div>
   </div>
   <div class="section">
@@ -1583,7 +1587,7 @@ window.openDetalle = async function(id) {
         const c=catInfo(g.categoria);
         return `<div class="gasto-item">
           <div class="g-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
-          <div class="g-body"><div class="g-cat">${c.name}</div><div class="g-nota">${g.notas||'Sin nota'}</div></div>
+          <div class="g-body"><div class="g-cat">${c.name}${g.proveedor?` · <span style="color:var(--text3)">${g.proveedor}</span>`:''}</div><div class="g-nota">${g.notas||''}</div></div>
           <div class="g-right">
             <div class="g-monto">${fmt(g.monto)}</div>
             <div class="g-quien">${g.socios?.nombre||'—'}</div>
@@ -1949,6 +1953,7 @@ function initGasto() {
   gTipo='operacion'; gCat=null; gFotoFile=null;
   document.getElementById('g-monto').value='';
   document.getElementById('g-nota').value='';
+  if(document.getElementById('g-proveedor')) document.getElementById('g-proveedor').value='';
   document.getElementById('g-fecha').value=today();
   document.getElementById('g-foto-ph').style.display='flex';
   document.getElementById('g-foto-tk').style.display='none';
@@ -2066,6 +2071,8 @@ window.gGuardar = async function(){
   if(!gCat){openSheet('cat-sheet');return;}
   const monto=parseFloat(document.getElementById('g-monto').value);
   if(!monto){document.getElementById('g-monto').focus();return;}
+  const notaVal=document.getElementById('g-nota').value.trim();
+  if(!notaVal){document.getElementById('g-nota').focus();showToast('Agrega una descripción del gasto');return;}
 
   const btn=document.getElementById('g-guardar-btn');
   btn.disabled=true;btn.innerHTML='<div class="spinner spinner-white"></div>Guardando...';
@@ -2090,9 +2097,11 @@ window.gGuardar = async function(){
         registrado_por:sesion.user.id,
       });
     } else {
+      const proveedor=document.getElementById('g-proveedor').value.trim()||null;
       await sb.from('gastos').insert({
         auto_id:gAutoId,categoria:gCat,monto,
         fecha_pago,notas,foto_url,
+        proveedor,
         pagado_por:pagado_por_id||sesion.user.id,
         registrado_por:sesion.user.id,
       });
