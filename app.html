@@ -1240,8 +1240,33 @@
       </div>
     </div>
     <div id="gd-foto" style="margin-bottom:10px"></div>
-    <button class="btn btn-secondary btn-full" onclick="editarGastoActual()" style="margin-bottom:8px">
-      <i class="ti ti-edit"></i>Editar este gasto
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <button class="btn btn-secondary" onclick="editarGastoActual()">
+        <i class="ti ti-edit"></i>Editar
+      </button>
+      <button class="btn" style="background:var(--red-bg);color:var(--red)" onclick="confirmarEliminarGasto()">
+        <i class="ti ti-trash"></i>Eliminar
+      </button>
+    </div>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- Eliminar gasto -->
+<div class="sheet-overlay" id="eliminar-gasto-sheet" onclick="closeSheet('eliminar-gasto-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Eliminar gasto</div>
+    <div style="background:var(--red-bg);border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--red);line-height:1.5">
+      <i class="ti ti-alert-triangle" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>
+      Esta acción quedará registrada. Ingresa el motivo de eliminación.
+    </div>
+    <div class="field">
+      <label>Motivo de eliminación <span style="color:var(--red)">*</span></label>
+      <textarea id="eliminar-motivo" placeholder="Ej: gasto duplicado, error en el monto..." rows="3" style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-family:var(--font);resize:none;background:var(--bg);color:var(--text1);outline:none"></textarea>
+    </div>
+    <button class="btn btn-red btn-full" onclick="ejecutarEliminarGasto()">
+      <i class="ti ti-trash"></i>Confirmar eliminación
     </button>
     <div style="height:8px"></div>
   </div>
@@ -1365,6 +1390,9 @@ async function init() {
   const {data:{session}} = await sb.auth.getSession();
   if(!session){window.location.href='/index.html';return;}
   sesion = session;
+  // Load all socios for name lookup
+  const {data:todosSOcios} = await sb.from('socios').select('*');
+  window._socios = todosSOcios || [];
   const {data} = await sb.from('socios').select('*').eq('id',session.user.id).single();
   socio = data;
   document.getElementById('db-avatar').textContent = socio?.avatar || socio?.nombre?.slice(0,2) || 'US';
@@ -1739,28 +1767,69 @@ window.openDetalle = async function(id) {
 };
 
 window._gastoActualIdx = null;
+window._editandoGastoId = null;
+
 window.editarGastoActual = function() {
   const g = window._gastosActuales[window._gastoActualIdx];
   if(!g) return;
-  // Pre-fill gasto form with existing data
+  window._editandoGastoId = g.id;
   gAutoId = g.auto_id;
   gTipo = 'operacion';
   gCat = g.categoria;
-  gQuien = g.pagado_por === (window._socioJosephId||'') ? 'j' : 'e';
   document.getElementById('g-monto').value = g.monto;
   document.getElementById('g-nota').value = g.notas||'';
   document.getElementById('g-fecha').value = g.fecha_pago||today();
   if(document.getElementById('g-proveedor')) document.getElementById('g-proveedor').value = g.proveedor||'';
   document.getElementById('gasto-detalle-sheet').classList.remove('show');
-  // Store ID for update
-  window._editandoGastoId = g.id;
+
+  // Change guardar button to say "Actualizar"
+  const btn = document.getElementById('g-guardar-btn');
+  btn.innerHTML = '<i class="ti ti-check"></i>Actualizar gasto';
+
   goScreen('gasto');
   setTimeout(()=>{
     gSetTipo('operacion');
     gSelCat(g.categoria);
     gSelAutoById(g.auto_id);
-    gSelQ(gQuien);
+    // Pre-select quien
+    const socios = window._socios || [];
+    const pagador = socios.find(s=>s.id===g.pagado_por);
+    if(pagador) gSelQ(pagador.nombre.toLowerCase()==='joseph'?'j':'e');
   },150);
+};
+
+window.confirmarEliminarGasto = function() {
+  document.getElementById('eliminar-motivo').value = '';
+  document.getElementById('gasto-detalle-sheet').classList.remove('show');
+  setTimeout(()=>document.getElementById('eliminar-gasto-sheet').classList.add('show'), 200);
+};
+
+window.ejecutarEliminarGasto = async function() {
+  const g = window._gastosActuales[window._gastoActualIdx];
+  if(!g) return;
+  const motivo = document.getElementById('eliminar-motivo').value.trim();
+  if(!motivo){ showToast('Ingresa el motivo de eliminación'); return; }
+  try {
+    // Guardar en log antes de eliminar
+    await sb.from('gastos_eliminados').insert({
+      gasto_id: g.id,
+      auto_id: g.auto_id,
+      categoria: g.categoria,
+      monto: g.monto,
+      fecha_pago: g.fecha_pago,
+      notas: g.notas,
+      proveedor: g.proveedor||null,
+      pagado_por: g.pagado_por,
+      motivo_eliminacion: motivo,
+      eliminado_por: sesion.user.id,
+    });
+    // Eliminar gasto
+    await sb.from('gastos').delete().eq('id', g.id);
+    document.getElementById('eliminar-gasto-sheet').classList.remove('show');
+    showToast('Gasto eliminado ✓');
+    window._editandoGastoId = null;
+    if(autoActual) openDetalle(autoActual.id);
+  } catch(e) { showToast('Error: '+e.message); }
 };
 
 window.abrirGastoDetalle = function(idx) {
@@ -1828,7 +1897,7 @@ window.verGastosPorCat = function(catId) {
   if(t) t.textContent=c.name;
   if(tot) tot.textContent=fmt(gastos.reduce((s,g)=>s+g.monto,0));
   if(l) l.innerHTML=gastos.map(g=>{
-    const idx=(window._gastosActuales||[]).indexOf(g);
+    const idx=(window._gastosActuales||[]).findIndex(x=>x.id===g.id);
     return `<div class="gasto-item" onclick="abrirGastoDetalle(${idx})" style="cursor:pointer">
       <div class="g-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
       <div class="g-body">
@@ -2184,6 +2253,9 @@ function initGasto() {
   document.getElementById('g-monto').value='';
   document.getElementById('g-nota').value='';
   if(document.getElementById('g-proveedor')) document.getElementById('g-proveedor').value='';
+  window._editandoGastoId = null;
+  const gBtn = document.getElementById('g-guardar-btn');
+  if(gBtn) gBtn.innerHTML = '<i class="ti ti-check"></i>Guardar registro';
   document.getElementById('g-fecha').value=today();
   document.getElementById('g-foto-ph').style.display='flex';
   document.getElementById('g-foto-tk').style.display='none';
@@ -2328,13 +2400,24 @@ window.gGuardar = async function(){
       });
     } else {
       const proveedor=document.getElementById('g-proveedor').value.trim()||null;
-      await sb.from('gastos').insert({
-        auto_id:gAutoId,categoria:gCat,monto,
-        fecha_pago,notas,foto_url,
-        proveedor,
-        pagado_por:pagado_por_id||sesion.user.id,
-        registrado_por:sesion.user.id,
-      });
+      if(window._editandoGastoId) {
+        // UPDATE existing gasto
+        await sb.from('gastos').update({
+          categoria:gCat, monto, fecha_pago, notas,
+          proveedor,
+          pagado_por:pagado_por_id||sesion.user.id,
+          ...(foto_url?{foto_url}:{}),
+        }).eq('id', window._editandoGastoId);
+        window._editandoGastoId = null;
+      } else {
+        // INSERT new gasto
+        await sb.from('gastos').insert({
+          auto_id:gAutoId, categoria:gCat, monto,
+          fecha_pago, notas, foto_url, proveedor,
+          pagado_por:pagado_por_id||sesion.user.id,
+          registrado_por:sesion.user.id,
+        });
+      }
     }
     btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i>Guardar registro';
     showToast(gTipo==='etapa'?'Etapa registrada ✓':'Gasto guardado ✓');
