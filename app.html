@@ -1655,19 +1655,53 @@ window.openDetalle = async function(id) {
   // Gastos
   const gastos = await fetchGastos(id);
   window._gastosActuales = gastos;
-  document.getElementById('det-gastos').innerHTML = gastos.length
-    ? gastos.map((g,idx)=>{
-        const c=catInfo(g.categoria);
-        return `<div class="gasto-item">
+
+  // Gastos por categoría
+  const catTotales = {};
+  gastos.forEach(g => {
+    if(!catTotales[g.categoria]) catTotales[g.categoria] = {total:0, count:0};
+    catTotales[g.categoria].total += g.monto;
+    catTotales[g.categoria].count++;
+  });
+  const detCatsEl = document.getElementById('det-cats');
+  if(detCatsEl) detCatsEl.innerHTML = Object.keys(catTotales).length
+    ? Object.keys(catTotales).map(cid => {
+        const c = catInfo(cid);
+        return `<div class="gasto-item" onclick="verGastosPorCat('${cid}')" style="cursor:pointer">
           <div class="g-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
-          <div class="g-body"><div class="g-cat">${c.name}${g.proveedor?` · <span style="color:var(--text3)">${g.proveedor}</span>`:''}</div><div class="g-nota">${g.notas||''}</div></div>
+          <div class="g-body">
+            <div class="g-cat">${c.name}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">${catTotales[cid].count} gasto${catTotales[cid].count>1?'s':''}</div>
+          </div>
           <div class="g-right">
-            <div class="g-monto">${fmt(g.monto)}</div>
-            <div class="g-quien">${g.socios?.nombre||'—'}</div>
-            ${g.foto_url?`<div class="g-foto"><i class="ti ti-photo"></i>foto</div>`:`<div class="g-foto"><i class="ti ti-photo-off"></i>sin foto</div>`}
+            <div class="g-monto">${fmt(catTotales[cid].total)}</div>
+            <i class="ti ti-chevron-right" style="font-size:14px;color:var(--text3);margin-top:4px"></i>
           </div>
         </div>`;}).join('')
-    : '<div class="empty" style="padding:20px"><i class="ti ti-receipt-off"></i><p>Sin gastos registrados</p></div>';
+    : '<div style="padding:12px 20px;font-size:13px;color:var(--text3)">Sin gastos</div>';
+
+  // Gastos recientes
+  const detGastosEl = document.getElementById('det-gastos');
+  if(detGastosEl) detGastosEl.innerHTML = gastos.length
+    ? gastos.slice(0,5).map((g,idx)=>{
+        const c=catInfo(g.categoria);
+        return `<div class="gasto-item" onclick="abrirGastoDetalle(${idx})" style="cursor:pointer">
+          <div class="g-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
+          <div class="g-body">
+            <div style="display:flex;justify-content:space-between;align-items:baseline">
+              <div class="g-cat">${c.name}${g.proveedor?` · <span style="font-size:10px;color:var(--text3)">${g.proveedor}</span>`:''}</div>
+              <div style="font-size:10px;color:var(--text3);white-space:nowrap;margin-left:8px">${g.fecha_pago||''}</div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px">
+              <div class="g-nota">${g.notas||'Sin descripción'}</div>
+              <div style="font-size:12px;font-weight:500;margin-left:8px;white-space:nowrap">${fmt(g.monto)}</div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:1px">${g.socios?.nombre||'—'}${g.foto_url?' · <i class="ti ti-photo" style="font-size:10px"></i>':''}</div>
+          </div>
+          <i class="ti ti-chevron-right" style="font-size:14px;color:var(--text3);flex-shrink:0;align-self:center"></i>
+        </div>`;}).join('')
+        + (gastos.length>5?`<div style="text-align:center;padding:8px;font-size:12px;color:var(--blue);cursor:pointer;border-top:0.5px solid var(--border)" onclick="verTodosGastos()">Ver todos (${gastos.length})</div>`:'')
+    : '<div style="padding:12px 20px;font-size:13px;color:var(--text3)">Sin gastos registrados</div>';
 
   // Resumen
   const costo = a.costo_total||0;
