@@ -1772,30 +1772,43 @@ window._editandoGastoId = null;
 window.editarGastoActual = function() {
   const g = window._gastosActuales[window._gastoActualIdx];
   if(!g) return;
+
+  // Set ID BEFORE goScreen so initGasto knows to skip reset
   window._editandoGastoId = g.id;
-  gAutoId = g.auto_id;
-  gTipo = 'operacion';
-  gCat = g.categoria;
-  document.getElementById('g-monto').value = g.monto;
-  document.getElementById('g-nota').value = g.notas||'';
-  document.getElementById('g-fecha').value = g.fecha_pago||today();
-  if(document.getElementById('g-proveedor')) document.getElementById('g-proveedor').value = g.proveedor||'';
+
   document.getElementById('gasto-detalle-sheet').classList.remove('show');
 
-  // Change guardar button to say "Actualizar"
-  const btn = document.getElementById('g-guardar-btn');
-  btn.innerHTML = '<i class="ti ti-check"></i>Actualizar gasto';
-
   goScreen('gasto');
+
+  // Fill fields after screen transition
   setTimeout(()=>{
+    gAutoId = g.auto_id;
+    gTipo = 'operacion';
+    gCat = g.categoria;
+
+    // Reset tipo UI first
     gSetTipo('operacion');
-    gSelCat(g.categoria);
+
+    // Fill fields
+    document.getElementById('g-monto').value = g.monto;
+    document.getElementById('g-nota').value = g.notas||'';
+    document.getElementById('g-fecha').value = g.fecha_pago||today();
+    if(document.getElementById('g-proveedor')) document.getElementById('g-proveedor').value = g.proveedor||'';
+
+    // Select auto and cat
     gSelAutoById(g.auto_id);
-    // Pre-select quien
+    gSelCat(g.categoria);
+
+    // Select quien
     const socios = window._socios || [];
     const pagador = socios.find(s=>s.id===g.pagado_por);
     if(pagador) gSelQ(pagador.nombre.toLowerCase()==='joseph'?'j':'e');
-  },150);
+    else gSelQ(socio?.nombre?.toLowerCase()==='joseph'?'j':'e');
+
+    // Update button
+    const btn = document.getElementById('g-guardar-btn');
+    if(btn) btn.innerHTML = '<i class="ti ti-check"></i>Actualizar gasto';
+  }, 200);
 };
 
 window.confirmarEliminarGasto = function() {
