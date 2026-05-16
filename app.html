@@ -521,7 +521,7 @@
     <div class="prestamo-card">
       <div class="pc-hd">
         <div class="pc-title"><i class="ti ti-coin"></i>Préstamo (papá)</div>
-        <div style="font-size:13px;font-weight:500;color:var(--purple)">$200,000</div>
+        <div style="font-size:13px;font-weight:500;color:var(--purple)" id="db-prestamo-total">$200,000</div>
       </div>
       <div class="pc-slots" id="db-slots"><div class="loading"><div class="spinner"></div></div></div>
     </div>
@@ -538,6 +538,9 @@
     <button class="btn btn-primary" style="padding:8px 14px;font-size:13px" onclick="goScreen('nuevo-auto')">
       <i class="ti ti-plus"></i>Nuevo
     </button>
+  </div>
+  <div style="padding:8px 20px 4px">
+    <input type="text" id="autos-buscar" placeholder="Buscar marca, modelo o VIN..." oninput="window.onBusqueda(this.value)" style="width:100%;padding:10px 14px;border:0.5px solid var(--border);border-radius:12px;font-size:14px;background:var(--bg2);color:var(--text1);outline:none;font-family:var(--font)">
   </div>
   <div class="filtros">
     <button class="filtro-btn active" onclick="filtrarAutos('todos',this)">Todos</button>
@@ -613,7 +616,13 @@
     <button class="btn btn-primary" onclick="goScreenWithAuto('gasto')"><i class="ti ti-receipt"></i>Agregar gasto</button>
     <button class="btn btn-secondary" onclick="goScreenWithAuto('simulador')"><i class="ti ti-calculator"></i>Simular</button>
   </div>
-  <div style="padding:8px 20px 20px" id="det-liq-btn"></div>
+  <div style="padding:8px 20px 4px" id="det-liq-btn"></div>
+  <div style="padding:0 20px 4px">
+    <button class="btn btn-secondary btn-full" onclick="compartirResumen()"><i class="ti ti-share"></i>Compartir resumen</button>
+  </div>
+  <div style="padding:4px 20px 20px;text-align:center">
+    <button style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:var(--font);display:inline-flex;align-items:center;gap:4px" onclick="openEliminarAutoSheet()"><i class="ti ti-trash" style="font-size:12px"></i>Eliminar este auto</button>
+  </div>
 </div>
 
 <!-- ============================================================
@@ -691,7 +700,10 @@
               <div style="font-size:10px;color:rgba(255,255,255,0.3)">MXN ÷ USD automático</div>
             </div>
           </div>
-          <div style="font-size:16px;font-weight:500;color:#fff" id="na-tc-resultado">Ingresa ambos</div>
+          <div>
+            <div style="font-size:16px;font-weight:500;color:#fff" id="na-tc-resultado">Ingresa ambos</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px" id="na-tc-ref"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -935,7 +947,7 @@
     <div class="prestamo-card">
       <div class="pc-hd">
         <div class="pc-title"><i class="ti ti-coin"></i>Préstamo (papá)</div>
-        <div style="font-size:13px;font-weight:500;color:var(--purple)">$200,000</div>
+        <div style="font-size:13px;font-weight:500;color:var(--purple)" id="caja-prestamo-total">$200,000</div>
       </div>
       <div class="pc-slots" id="caja-slots"></div>
     </div>
@@ -950,6 +962,13 @@
   <div class="section">
     <div class="sec-label">Últimos movimientos</div>
     <div id="caja-movs"></div>
+  </div>
+  <div style="padding:0 20px 4px">
+    <div onclick="toggleHistPrest()" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;cursor:pointer;border-top:0.5px solid var(--border)">
+      <span style="font-size:12px;font-weight:500;color:var(--text3)">Historial préstamo</span>
+      <i class="ti ti-chevron-down" id="hist-prest-chevron" style="font-size:16px;color:var(--text3);transition:transform 0.2s"></i>
+    </div>
+    <div id="caja-hist-prest" style="display:none"></div>
   </div>
   <div style="height:20px"></div>
 </div>
@@ -1286,6 +1305,49 @@
   </div>
 </div>
 
+<!-- Editar datos del auto -->
+<div class="sheet-overlay" id="editar-auto-sheet" onclick="closeSheet('editar-auto-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Editar auto</div>
+    <div class="field-row field">
+      <div class="field"><label>Marca</label><input type="text" id="ea-marca" placeholder="NISSAN"></div>
+      <div class="field"><label>Año</label><input type="number" id="ea-anio" placeholder="2020"></div>
+    </div>
+    <div class="field"><label>Modelo</label><input type="text" id="ea-modelo" placeholder="SENTRA BLANCO"></div>
+    <div class="field"><label>VIN</label><input type="text" id="ea-vin" placeholder="3N1AB7AP..."></div>
+    <div class="field-row field">
+      <div class="field"><label>Millas (MI)</label><input type="number" id="ea-millas" placeholder="85,000"></div>
+      <div class="field"><label>Fecha compra</label><input type="date" id="ea-fecha"></div>
+    </div>
+    <div class="field">
+      <label>Distribución de ganancia</label>
+      <div class="dist-toggle">
+        <button class="dt-btn" id="ea-d1" onclick="eaSelDist(this,'50_50')">50 / 50</button>
+        <button class="dt-btn" id="ea-d2" onclick="eaSelDist(this,'100_joseph')">100% Joseph</button>
+        <button class="dt-btn" id="ea-d3" onclick="eaSelDist(this,'100_emmanuel')">100% Emmanuel</button>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="guardarEditAuto()"><i class="ti ti-check"></i>Guardar cambios</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- Eliminar auto -->
+<div class="sheet-overlay" id="eliminar-auto-sheet" onclick="closeSheet('eliminar-auto-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Eliminar auto</div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:6px" id="eliminar-auto-nombre">—</p>
+    <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Se eliminarán también todos los gastos y etapas asociados. Esta acción no se puede deshacer.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-secondary" onclick="closeSheet('eliminar-auto-sheet',{target:document.getElementById('eliminar-auto-sheet')})">Cancelar</button>
+      <button class="btn btn-red" onclick="ejecutarEliminarAuto()"><i class="ti ti-trash"></i>Eliminar</button>
+    </div>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
 <!-- Editar precio estimado -->
 <div class="sheet-overlay" id="precio-est-sheet" onclick="closeSheet('precio-est-sheet',event)">
   <div class="sheet">
@@ -1478,10 +1540,12 @@ async function loadDashboard() {
   // Slots
   try {
     const slots = await fetchSlots();
+    const prestamoTotal = slots.reduce((s,sl)=>s+(sl.monto||0),0);
+    document.getElementById('db-prestamo-total').textContent = fmt(prestamoTotal);
     document.getElementById('db-slots').innerHTML = slots.map(s=>`
       <div class="pc-slot ${s.libre?'libre':'ocupado'}">
         <div class="pc-slot-label">Slot ${s.numero_slot}</div>
-        ${s.libre?'<div style="font-size:11px;color:var(--text3)">Disponible</div>':`<div class="pc-slot-auto">${s.autos?.modelo||'—'}</div><div class="pc-slot-monto">$100,000</div>`}
+        ${s.libre?'<div style="font-size:11px;color:var(--text3)">Disponible</div>':`<div class="pc-slot-auto">${s.autos?.modelo||'—'}</div><div class="pc-slot-monto">${fmt(s.monto||0)}</div>`}
       </div>`).join('');
   } catch(e){console.error(e);}
 }
@@ -1553,6 +1617,9 @@ function renderAutosList(autos) {
     if(filtroActual==='activos') filtered=autos.filter(a=>a.status!=='vendido');
     else filtered=autos.filter(a=>a.status===filtroActual);
   }
+  if(busquedaTexto) {
+    filtered=filtered.filter(a=>`${a.marca} ${a.modelo} ${a.anio} ${a.vin||''}`.toLowerCase().includes(busquedaTexto));
+  }
   document.getElementById('autos-list-full').innerHTML = filtered.length
     ? `<div class="autos-list">${filtered.map(autoCardHtml).join('')}</div><div style="height:20px"></div>`
     : '<div class="empty"><i class="ti ti-car-off"></i><p>Sin autos en esta categoría</p></div>';
@@ -1577,6 +1644,8 @@ window.openDetalle = async function(id) {
   // Hero
   document.getElementById('det-pill').innerHTML = pillHtml(a.status);
   document.getElementById('det-titulo').textContent = `${a.anio} ${a.marca} ${a.modelo}`;
+  document.getElementById('det-titulo').onclick = openEditAuto;
+  document.getElementById('det-titulo').style.cursor = 'pointer';
   document.getElementById('det-sub').textContent = `VIN: ${a.vin||'N/D'} · ${a.fecha_compra||''}`;
   const diasTotal = a.dias_total || diasEntre(a.fecha_compra, today());
   document.getElementById('det-stats').innerHTML = `
@@ -2083,6 +2152,98 @@ window.confirmarReparaciones = async function() {
 };
 
 // ── Nuevo Auto ─────────────────────────────────────────────────
+let busquedaTexto = '';
+window.onBusqueda = function(val) {
+  busquedaTexto = val.trim().toLowerCase();
+  renderAutosList(todosAutos);
+};
+
+let eaDist = '50_50';
+window.openEditAuto = function() {
+  if(!autoActual) return;
+  const a = autoActual;
+  document.getElementById('ea-marca').value = a.marca||'';
+  document.getElementById('ea-anio').value = a.anio||'';
+  document.getElementById('ea-modelo').value = a.modelo||'';
+  document.getElementById('ea-vin').value = a.vin||'';
+  document.getElementById('ea-millas').value = a.millas||'';
+  document.getElementById('ea-fecha').value = a.fecha_compra||'';
+  eaDist = a.dist_ganancia||'50_50';
+  document.querySelectorAll('#ea-d1,#ea-d2,#ea-d3').forEach(b=>b.classList.remove('sel'));
+  const dmap={'50_50':'ea-d1','100_joseph':'ea-d2','100_emmanuel':'ea-d3'};
+  document.getElementById(dmap[eaDist])?.classList.add('sel');
+  openSheet('editar-auto-sheet');
+};
+window.eaSelDist = function(btn,val) {
+  eaDist=val;
+  document.querySelectorAll('#ea-d1,#ea-d2,#ea-d3').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+};
+window.guardarEditAuto = async function() {
+  const marca=document.getElementById('ea-marca').value.trim();
+  const modelo=document.getElementById('ea-modelo').value.trim();
+  const anio=parseInt(document.getElementById('ea-anio').value)||0;
+  if(!marca||!modelo){showToast('Completa marca y modelo');return;}
+  try{
+    const campos={marca,modelo,anio,vin:document.getElementById('ea-vin').value.trim()||null,millas:parseFloat(document.getElementById('ea-millas').value)||null,fecha_compra:document.getElementById('ea-fecha').value||null,dist_ganancia:eaDist};
+    await sb.from('autos').update(campos).eq('id',autoActual.id);
+    Object.assign(autoActual,campos);
+    const idx=todosAutos.findIndex(a=>a.id===autoActual.id);
+    if(idx!==-1) Object.assign(todosAutos[idx],campos);
+    closeSheet('editar-auto-sheet',{target:document.getElementById('editar-auto-sheet')});
+    openDetalle(autoActual.id);
+    showToast('Auto actualizado ✓');
+  }catch(e){showToast('Error: '+e.message);}
+};
+
+window.openEliminarAutoSheet = function() {
+  if(!autoActual) return;
+  document.getElementById('eliminar-auto-nombre').textContent=`${autoActual.anio} ${autoActual.marca} ${autoActual.modelo}`;
+  openSheet('eliminar-auto-sheet');
+};
+window.ejecutarEliminarAuto = async function() {
+  if(!autoActual) return;
+  const id=autoActual.id;
+  try{
+    await sb.from('gastos').delete().eq('auto_id',id);
+    await sb.from('etapas_auto').delete().eq('auto_id',id);
+    await sb.from('prestamo_slots').update({auto_id:null,libre:true}).eq('auto_id',id);
+    await sb.from('autos').delete().eq('id',id);
+    todosAutos=todosAutos.filter(a=>a.id!==id);
+    autoActual=null;
+    closeSheet('eliminar-auto-sheet',{target:document.getElementById('eliminar-auto-sheet')});
+    showToast('Auto eliminado');
+    goScreen('autos');
+  }catch(e){showToast('Error: '+e.message);}
+};
+
+window.compartirResumen = function() {
+  if(!autoActual) return;
+  const a=autoActual;
+  const texto=`${a.anio} ${a.marca} ${a.modelo}\nVIN: ${a.vin||'N/D'}\nStatus: ${a.status}\nCosto total: ${fmt(a.costo_total||0)}\nPrecio estimado: ${fmt(a.precio_venta_estimado||0)}\nGanancia est.: ${fmt((a.precio_venta_estimado||0)-(a.costo_total||0))}\nDías en inventario: ${a.dias_total||'—'}`;
+  if(navigator.share){navigator.share({title:`${a.anio} ${a.marca} ${a.modelo}`,text:texto});}
+  else{navigator.clipboard?.writeText(texto).then(()=>showToast('Copiado al portapapeles'));}
+};
+
+let histPrestCargado=false;
+window.toggleHistPrest = async function() {
+  const el=document.getElementById('caja-hist-prest');
+  const chev=document.getElementById('hist-prest-chevron');
+  const visible=el.style.display!=='none';
+  el.style.display=visible?'none':'block';
+  chev.style.transform=visible?'':'rotate(180deg)';
+  if(!visible&&!histPrestCargado){
+    histPrestCargado=true;
+    const{data}=await sb.from('historial_prestamo').select('*,autos(marca,modelo,anio)').order('created_at',{ascending:false}).limit(20);
+    const tmap={asignacion:'Asignación a auto',liberacion:'Slot liberado',devolucion_papa:'Pago a papá'};
+    el.innerHTML=data?.length?data.map(h=>`<div class="mov-item">
+      <div class="mov-ic pag"><i class="ti ti-coin"></i></div>
+      <div class="mov-body"><div class="mov-n">${tmap[h.tipo]||h.tipo}</div><div class="mov-s">${h.autos?`${h.autos.anio} ${h.autos.marca} ${h.autos.modelo}`:''} · ${h.created_at?.slice(0,10)||''}</div></div>
+      <div class="mov-a pos">${fmt(h.monto||0)}</div>
+    </div>`).join(''):'<p style="font-size:13px;color:var(--text3);text-align:center;padding:16px">Sin historial</p>';
+  }
+};
+
 let naDist='50_50', naFuente='prestamo', naStep=1, naTcReal=0;
 
 function initNuevoAuto() {
@@ -2108,6 +2269,13 @@ function initNuevoAuto() {
   document.querySelectorAll('.dt-btn').forEach(b=>b.classList.remove('sel'));
   document.querySelector('.dt-btn').classList.add('sel');
   naSetFuente('prestamo');
+  // TC referencia en tiempo real
+  const tcRef=document.getElementById('na-tc-ref');
+  if(tcRef) tcRef.textContent='Cargando tipo de cambio...';
+  fetch('https://open.er-api.com/v6/latest/USD').then(r=>r.json()).then(d=>{
+    const mxn=d.rates?.MXN;
+    if(mxn&&tcRef) tcRef.textContent=`Referencia hoy: $${mxn.toFixed(2)} MXN/USD`;
+  }).catch(()=>{if(tcRef) tcRef.textContent='';});
 }
 
 window.selDist = function(btn,d) {
@@ -2497,10 +2665,12 @@ async function loadCaja(){
     renderCaja();
 
     const slots=await fetchSlots();
+    cajaState.prestamo = slots.reduce((s,sl)=>s+(sl.monto||0),0);
+    document.getElementById('caja-prestamo-total').textContent = fmt(cajaState.prestamo);
     document.getElementById('caja-slots').innerHTML=slots.map(s=>`
       <div class="pc-slot ${s.libre?'libre':'ocupado'}">
         <div class="pc-slot-label">Slot ${s.numero_slot}</div>
-        ${s.libre?'<div style="font-size:11px;color:var(--text3)">Disponible</div>':`<div class="pc-slot-auto">${s.autos?.modelo||'—'}</div><div class="pc-slot-monto">$100,000</div>`}
+        ${s.libre?'<div style="font-size:11px;color:var(--text3)">Disponible</div>':`<div class="pc-slot-auto">${s.autos?.modelo||'—'}</div><div class="pc-slot-monto">${fmt(s.monto||0)}</div>`}
       </div>`).join('');
   } catch(e){console.error(e);}
 }
@@ -2618,9 +2788,9 @@ window.pagoCalc = function(){
   const m=parseFloat(document.getElementById('pago-monto').value)||0;
   const prev=document.getElementById('pago-preview');
   if(!m){prev.classList.add('hidden');return;}
-  document.getElementById('pp-act').textContent=fmt(200000);
+  document.getElementById('pp-act').textContent=fmt(cajaState.prestamo||200000);
   document.getElementById('pp-pag').textContent='-'+fmt(m);
-  document.getElementById('pp-rest').textContent=fmt(Math.max(0,200000-m));
+  document.getElementById('pp-rest').textContent=fmt(Math.max(0,(cajaState.prestamo||200000)-m));
   prev.classList.remove('hidden');
 };
 window.pagoEjecutar = async function(){
@@ -2720,7 +2890,7 @@ async function loadStats(){
   const ganTotal=vendidos.reduce((s,a)=>s+(a.ganancia_real||0),0);
   const diasProm=vendidos.filter(a=>a.dias_total).reduce((s,a,_,arr)=>s+a.dias_total/arr.length,0);
   const costosProm=autos.reduce((s,a,_,arr)=>s+(a.costo_total||0)/arr.length,0);
-  document.getElementById('stats-sub').textContent=`${autos.length} autos · 2026`;
+  document.getElementById('stats-sub').textContent=`${autos.length} autos · ${new Date().getFullYear()}`;
   document.getElementById('stats-kpis').innerHTML=`
     <div class="stat-card dark">
       <div class="stat-label">Ganancia total</div>
