@@ -1286,6 +1286,17 @@
   </div>
 </div>
 
+<!-- Editar precio estimado -->
+<div class="sheet-overlay" id="precio-est-sheet" onclick="closeSheet('precio-est-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Precio de venta estimado</div>
+    <div class="field"><label>Precio estimado (MXN)</label><input type="number" id="pe-input" placeholder="148,000" inputmode="numeric"></div>
+    <button class="btn btn-primary btn-full" onclick="guardarPrecioEst()"><i class="ti ti-check"></i>Guardar</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
 <!-- ============================================================
      JAVASCRIPT
      ============================================================ -->
@@ -1573,7 +1584,7 @@ window.openDetalle = async function(id) {
       <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:3px">Costo total</div>
       <div style="font-size:15px;font-weight:500;color:#fff">${fmt(a.costo_total||0)}</div>
     </div>
-    <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:10px">
+    <div style="background:rgba(255,255,255,0.08);border-radius:12px;padding:10px;cursor:pointer" onclick="openEditPrecioEst()">
       <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:3px">Precio est.</div>
       <div style="font-size:15px;font-weight:500;color:#fff">${fmt(a.precio_venta_estimado||0)}</div>
     </div>
@@ -1741,7 +1752,7 @@ window.openDetalle = async function(id) {
       <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3)">
         <span style="color:var(--text3)">Costo total</span><span class="fw-500">${fmt(costo)}</span>
       </div>
-      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3)">
+      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3);cursor:pointer" onclick="openEditPrecioEst()">
         <span style="color:var(--text3)">Precio estimado</span><span class="fw-500">${fmt(pvEst)}</span>
       </div>
       ${pvReal?`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3)">
@@ -1765,6 +1776,29 @@ window.openDetalle = async function(id) {
   }
   document.getElementById('det-liq-btn').innerHTML = liqHtml;
 };
+
+window.openEditPrecioEst = function() {
+  if (!autoActual) return;
+  document.getElementById('pe-input').value = autoActual.precio_venta_estimado || '';
+  openSheet('precio-est-sheet');
+};
+
+window.guardarPrecioEst = async function() {
+  const val = parseFloat(document.getElementById('pe-input').value);
+  if (!val || val <= 0) return;
+  try {
+    await sb.from('autos').update({ precio_venta_estimado: val }).eq('id', autoActual.id);
+    autoActual.precio_venta_estimado = val;
+    const idx = todosAutos.findIndex(a => a.id === autoActual.id);
+    if (idx !== -1) todosAutos[idx].precio_venta_estimado = val;
+    closeSheet('precio-est-sheet', { target: document.getElementById('precio-est-sheet') });
+    openDetalle(autoActual.id);
+    showToast('Precio actualizado');
+  } catch(e) {
+    showToast('Error al guardar');
+  }
+};
+
 
 window._gastoActualIdx = null;
 window._editandoGastoId = null;
