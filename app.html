@@ -700,10 +700,7 @@
               <div style="font-size:10px;color:rgba(255,255,255,0.3)">MXN ÷ USD automático</div>
             </div>
           </div>
-          <div>
-            <div style="font-size:16px;font-weight:500;color:#fff" id="na-tc-resultado">Ingresa ambos</div>
-            <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px" id="na-tc-ref"></div>
-          </div>
+          <div style="font-size:16px;font-weight:500;color:#fff" id="na-tc-resultado">Ingresa ambos</div>
         </div>
       </div>
     </div>
@@ -2269,13 +2266,6 @@ function initNuevoAuto() {
   document.querySelectorAll('.dt-btn').forEach(b=>b.classList.remove('sel'));
   document.querySelector('.dt-btn').classList.add('sel');
   naSetFuente('prestamo');
-  // TC referencia en tiempo real
-  const tcRef=document.getElementById('na-tc-ref');
-  if(tcRef) tcRef.textContent='Cargando tipo de cambio...';
-  fetch('https://open.er-api.com/v6/latest/USD').then(r=>r.json()).then(d=>{
-    const mxn=d.rates?.MXN;
-    if(mxn&&tcRef) tcRef.textContent=`Referencia hoy: $${mxn.toFixed(2)} MXN/USD`;
-  }).catch(()=>{if(tcRef) tcRef.textContent='';});
 }
 
 window.selDist = function(btn,d) {
