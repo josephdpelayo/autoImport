@@ -2217,7 +2217,17 @@ window.ejecutarEliminarAuto = async function() {
 window.compartirResumen = function() {
   if(!autoActual) return;
   const a=autoActual;
-  const texto=`${a.anio} ${a.marca} ${a.modelo}\nVIN: ${a.vin||'N/D'}\nStatus: ${a.status}\nCosto total: ${fmt(a.costo_total||0)}\nPrecio estimado: ${fmt(a.precio_venta_estimado||0)}\nGanancia est.: ${fmt((a.precio_venta_estimado||0)-(a.costo_total||0))}\nDías en inventario: ${a.dias_total||'—'}`;
+  const gastos=window._gastosActuales||[];
+  const catTotales={};
+  gastos.forEach(g=>{
+    const c=catInfo(g.categoria);
+    if(!catTotales[g.categoria]) catTotales[g.categoria]={name:c.name,total:0};
+    catTotales[g.categoria].total+=g.monto;
+  });
+  const gastosLineas=Object.keys(catTotales).length
+    ?'\n\nGastos:\n'+Object.keys(catTotales).map(cid=>`  ${catTotales[cid].name}: ${fmt(catTotales[cid].total)}`).join('\n')
+    :'';
+  const texto=`${a.anio} ${a.marca} ${a.modelo}\nVIN: ${a.vin||'N/D'}\nStatus: ${a.status}\nCosto total: ${fmt(a.costo_total||0)}\nPrecio estimado: ${fmt(a.precio_venta_estimado||0)}\nGanancia est.: ${fmt((a.precio_venta_estimado||0)-(a.costo_total||0))}\nDías en inventario: ${a.dias_total||'—'}${gastosLineas}`;
   if(navigator.share){navigator.share({title:`${a.anio} ${a.marca} ${a.modelo}`,text:texto});}
   else{navigator.clipboard?.writeText(texto).then(()=>showToast('Copiado al portapapeles'));}
 };
@@ -2466,10 +2476,14 @@ function initGasto() {
   document.getElementById('g-foto-tk').style.display='none';
   gSetTipo('operacion');
   // Auto pre-seleccionado si viene del detalle
-  if(gAutoId&&autoActual?.id===gAutoId){
+  if(gAutoId){
     gSelAutoById(gAutoId);
+    if(!gAutoId){
+      document.getElementById('g-auto-name').textContent='Seleccionar auto...';
+      document.getElementById('g-auto-name').classList.add('ph');
+      document.getElementById('g-auto-desc').textContent='';
+    }
   } else {
-    gAutoId=null;
     document.getElementById('g-auto-name').textContent='Seleccionar auto...';
     document.getElementById('g-auto-name').classList.add('ph');
     document.getElementById('g-auto-desc').textContent='';
@@ -2482,7 +2496,7 @@ function initGasto() {
 }
 
 function gSelAutoById(id){
-  const a=todosAutos.find(x=>x.id===id);
+  const a=todosAutos.find(x=>x.id===id)||(autoActual?.id===id?autoActual:null);
   if(!a) return;
   gAutoId=id;
   const n=document.getElementById('g-auto-name');
@@ -2692,7 +2706,9 @@ function renderCaja(){
 }
 
 window.openLiqSheet = function(autoId){
-  document.getElementById('liq-auto').value=autoId||'';
+  const liqSel=document.getElementById('liq-auto');
+  liqSel.innerHTML='<option value="">Seleccionar...</option>'+todosAutos.filter(a=>a.status!=='vendido').map(a=>`<option value="${a.id}">${a.anio} ${a.marca} ${a.modelo}</option>`).join('');
+  liqSel.value=autoId||'';
   liqCalc();
   openSheet('liq-sheet');
 };
