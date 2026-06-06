@@ -1092,10 +1092,10 @@
       <div class="card" style="margin-bottom:10px;font-size:13px">
         <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Precio de venta</span><span class="fw-500 text-green" id="lp-venta">—</span></div>
         <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Costo total</span><span class="fw-500" id="lp-costo">—</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0 4px;border-top:0.5px solid var(--border);margin-top:4px"><span class="fw-500">Ganancia</span><span class="fw-500 text-green" id="lp-gan">—</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">+ Joseph (inv + ganancia)</span><span class="fw-500" id="lp-j">—</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">+ Emmanuel (inv + ganancia)</span><span class="fw-500" id="lp-e">—</span></div>
-        <div style="font-size:10px;color:var(--text3);margin-top:8px;text-align:center">Todo queda en la caja para reinvertir</div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0 4px;border-top:0.5px solid var(--border);margin-top:4px"><span class="fw-500">Ganancia neta</span><span class="fw-500 text-green" id="lp-gan">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Joseph — 50%</span><span class="fw-500 text-green" id="lp-j">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text3)">Emmanuel — 50%</span><span class="fw-500 text-green" id="lp-e">—</span></div>
+        <div id="lp-ret" style="font-size:11px;color:var(--text3);margin-top:8px;padding-top:6px;border-top:0.5px solid var(--border)"></div>
       </div>
       <button class="btn btn-green btn-full" onclick="liqEjecutar()"><i class="ti ti-check"></i>Confirmar liquidación</button>
     </div>
@@ -2728,8 +2728,13 @@ window.liqCalc = function(){
   document.getElementById('lp-venta').textContent=fmt(precio);
   document.getElementById('lp-costo').textContent=fmt(a.costo_total||0);
   document.getElementById('lp-gan').textContent=(gan>=0?'+':'')+fmt(gan);
-  document.getElementById('lp-j').textContent='+'+fmt((a.aporte_joseph||0)+ganJ);
-  document.getElementById('lp-e').textContent='+'+fmt((a.aporte_emmanuel||0)+ganE);
+  document.getElementById('lp-j').textContent=(ganJ>0?'+':'')+fmt(ganJ);
+  document.getElementById('lp-e').textContent=(ganE>0?'+':'')+fmt(ganE);
+  const retParts=[];
+  if(a.aporte_joseph) retParts.push(`Joseph recupera ${fmt(a.aporte_joseph)}`);
+  if(a.aporte_emmanuel) retParts.push(`Emmanuel recupera ${fmt(a.aporte_emmanuel)}`);
+  if(a.usa_prestamo) retParts.push('Préstamo $100,000 devuelto');
+  document.getElementById('lp-ret').textContent=retParts.join('  ·  ')||'Todo queda en la caja para reinvertir';
   prev.classList.remove('hidden');
 };
 
