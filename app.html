@@ -2854,14 +2854,16 @@ window.liqCalc = function(){
   if(!a){return;}
   const gan=precio-(a.costo_total||0);
   let ganJ=0,ganE=0;
-  if(a.dist_ganancia==='50_50'){ganJ=ganE=gan>0?gan/2:0;}
-  else if(a.dist_ganancia==='100_joseph'){ganJ=gan>0?gan:0;}
-  else if(a.dist_ganancia==='100_emmanuel'){ganE=gan>0?gan:0;}
+  if(a.dist_ganancia==='50_50'){ganJ=ganE=gan/2;}
+  else if(a.dist_ganancia==='100_joseph'){ganJ=gan;}
+  else if(a.dist_ganancia==='100_emmanuel'){ganE=gan;}
+  const fmtS=n=>(n<0?'−':n>0?'+':'')+fmt(n);
+  const cls=n=>'fw-500 '+(n<0?'text-red':'text-green');
   document.getElementById('lp-venta').textContent=fmt(precio);
   document.getElementById('lp-costo').textContent=fmt(a.costo_total||0);
-  document.getElementById('lp-gan').textContent=(gan>=0?'+':'')+fmt(gan);
-  document.getElementById('lp-j').textContent=(ganJ>0?'+':'')+fmt(ganJ);
-  document.getElementById('lp-e').textContent=(ganE>0?'+':'')+fmt(ganE);
+  const ganEl=document.getElementById('lp-gan');ganEl.textContent=fmtS(gan);ganEl.className=cls(gan);
+  const jEl=document.getElementById('lp-j');jEl.textContent=fmtS(ganJ);jEl.className=cls(ganJ);
+  const eEl=document.getElementById('lp-e');eEl.textContent=fmtS(ganE);eEl.className=cls(ganE);
   const retParts=[];
   if(a.aporte_joseph) retParts.push(`Joseph recupera ${fmt(a.aporte_joseph)}`);
   if(a.aporte_emmanuel) retParts.push(`Emmanuel recupera ${fmt(a.aporte_emmanuel)}`);
@@ -2877,9 +2879,9 @@ window.liqEjecutar = async function(){
   const a=todosAutos.find(x=>x.id===id);
   const gan=precio-(a.costo_total||0);
   let ganJ=0,ganE=0;
-  if(a.dist_ganancia==='50_50'){ganJ=ganE=gan>0?gan/2:0;}
-  else if(a.dist_ganancia==='100_joseph'){ganJ=gan>0?gan:0;}
-  else if(a.dist_ganancia==='100_emmanuel'){ganE=gan>0?gan:0;}
+  if(a.dist_ganancia==='50_50'){ganJ=ganE=gan/2;}
+  else if(a.dist_ganancia==='100_joseph'){ganJ=gan;}
+  else if(a.dist_ganancia==='100_emmanuel'){ganE=gan;}
   try{
     await sb.from('movimientos_caja').insert({tipo:'liquidacion',auto_id:id,monto:precio,
       precio_venta_real:precio,costo_total_auto:a.costo_total,ganancia_neta:gan,
