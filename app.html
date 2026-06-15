@@ -1986,39 +1986,31 @@ window.editarGastoActual = function() {
   const g = window._gastosActuales[window._gastoActualIdx];
   if(!g) return;
 
-  // Set ID BEFORE goScreen so initGasto knows to skip reset
-  window._editandoGastoId = g.id;
-
   document.getElementById('gasto-detalle-sheet').classList.remove('show');
 
+  // goScreen llama initGasto() que limpia _editandoGastoId — lo seteamos DESPUÉS
   goScreen('gasto');
+  window._editandoGastoId = g.id;
 
-  // Fill fields after screen transition
   setTimeout(()=>{
     gAutoId = g.auto_id;
     gTipo = 'operacion';
     gCat = g.categoria;
-
-    // Reset tipo UI first
     gSetTipo('operacion');
 
-    // Fill fields
     document.getElementById('g-monto').value = g.monto;
     document.getElementById('g-nota').value = g.notas||'';
     document.getElementById('g-fecha').value = g.fecha_pago||today();
     if(document.getElementById('g-proveedor')) document.getElementById('g-proveedor').value = g.proveedor||'';
 
-    // Select auto and cat
     gSelAutoById(g.auto_id);
     gSelCat(g.categoria);
 
-    // Select quien
     const socios = window._socios || [];
     const pagador = socios.find(s=>s.id===g.pagado_por);
     if(pagador) gSelQ(pagador.nombre.toLowerCase()==='joseph'?'j':'e');
     else gSelQ(socio?.nombre?.toLowerCase()==='joseph'?'j':'e');
 
-    // Update button
     const btn = document.getElementById('g-guardar-btn');
     if(btn) btn.innerHTML = '<i class="ti ti-check"></i>Actualizar gasto';
   }, 200);
@@ -2592,12 +2584,11 @@ window.naGuardar = async function() {
 let gTipo='operacion', gCat=null, gAutoId=null, gQuien=null, gFotoFile=null;
 
 function initGasto() {
-  const _preserveEditId = window._editandoGastoId;
   gTipo='operacion'; gCat=null; gFotoFile=null;
   document.getElementById('g-monto').value='';
   document.getElementById('g-nota').value='';
   if(document.getElementById('g-proveedor')) document.getElementById('g-proveedor').value='';
-  window._editandoGastoId = _preserveEditId;
+  window._editandoGastoId = null;
   const gBtn = document.getElementById('g-guardar-btn');
   if(gBtn) gBtn.innerHTML = '<i class="ti ti-check"></i>Guardar registro';
   document.getElementById('g-fecha').value=today();
