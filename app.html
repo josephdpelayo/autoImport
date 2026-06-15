@@ -505,6 +505,18 @@
   <div class="section">
     <div class="stats-grid" id="db-stats"><div class="loading"><div class="spinner"></div></div></div>
   </div>
+
+  <!-- Banner notificaciones push -->
+  <div id="notif-banner" style="display:none;margin:0 20px 8px;background:var(--blue-bg);border-radius:14px;padding:12px 14px;align-items:center;gap:10px">
+    <div style="font-size:20px">🔔</div>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:500;color:var(--blue)">Activar notificaciones</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:1px">Entérate de cada movimiento al instante</div>
+    </div>
+    <button onclick="activarNotificaciones()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font)">Activar</button>
+    <button onclick="cerrarBannerNotif()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0 2px">×</button>
+  </div>
+
   <div class="sec-hd">
     <h3>Autos activos</h3>
     <button class="sec-link" onclick="goScreen('autos')">Ver todos</button>
@@ -1476,16 +1488,29 @@ function _b64ToUint8(b64) {
   return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
 }
 
+let _swReg = null;
+
 async function initPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js');
+    _swReg = await navigator.serviceWorker.register('/sw.js');
     await navigator.serviceWorker.ready;
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') return;
-    let sub = await reg.pushManager.getSubscription();
+    const perm = Notification.permission;
+    if (perm === 'granted') {
+      await _suscribirPush();
+    } else if (perm === 'default') {
+      _mostrarBannerNotif();
+    }
+    // si 'denied', no hacemos nada
+  } catch(e) { console.warn('Push init:', e); }
+}
+
+async function _suscribirPush() {
+  try {
+    if (!_swReg) return;
+    let sub = await _swReg.pushManager.getSubscription();
     if (!sub) {
-      sub = await reg.pushManager.subscribe({
+      sub = await _swReg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: _b64ToUint8(VAPID_PUBLIC_KEY),
       });
@@ -1497,8 +1522,32 @@ async function initPush() {
       p256dh: j.keys.p256dh,
       auth: j.keys.auth,
     }, { onConflict: 'endpoint' });
-  } catch(e) { console.warn('Push init:', e); }
+  } catch(e) { console.warn('Push subscribe:', e); }
 }
+
+function _mostrarBannerNotif() {
+  const el = document.getElementById('notif-banner');
+  if (el) el.style.display = 'flex';
+}
+
+window.activarNotificaciones = async function() {
+  const banner = document.getElementById('notif-banner');
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      await _suscribirPush();
+      if (banner) banner.style.display = 'none';
+      showToast('Notificaciones activadas ✓');
+    } else {
+      if (banner) banner.style.display = 'none';
+    }
+  } catch(e) { console.warn('Notif permission:', e); }
+};
+
+window.cerrarBannerNotif = function() {
+  const el = document.getElementById('notif-banner');
+  if (el) el.style.display = 'none';
+};
 
 window.notif = async function(titulo, cuerpo, datos = {}) {
   try {
