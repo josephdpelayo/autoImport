@@ -939,8 +939,7 @@
       </div>
       <div class="sh-pills">
         <div class="sh-pill"><div class="sh-pill-lbl">Invertido</div><div class="sh-pill-val" id="cj-inv">—</div></div>
-        <div class="sh-pill"><div class="sh-pill-lbl">+ Ganancia</div><div class="sh-pill-val" id="cj-gan">—</div></div>
-        <div class="sh-pill"><div class="sh-pill-lbl">− Ya retirado</div><div class="sh-pill-val" id="cj-ret">—</div></div>
+        <div class="sh-pill"><div class="sh-pill-lbl">+ Ganancia disponible</div><div class="sh-pill-val" id="cj-gan">—</div></div>
       </div>
     </div>
     <div class="socio-hero e" id="caja-e">
@@ -950,8 +949,7 @@
       </div>
       <div class="sh-pills">
         <div class="sh-pill"><div class="sh-pill-lbl">Invertido</div><div class="sh-pill-val" id="ce-inv">—</div></div>
-        <div class="sh-pill"><div class="sh-pill-lbl">+ Ganancia</div><div class="sh-pill-val" id="ce-gan">—</div></div>
-        <div class="sh-pill"><div class="sh-pill-lbl">− Ya retirado</div><div class="sh-pill-val" id="ce-ret">—</div></div>
+        <div class="sh-pill"><div class="sh-pill-lbl">+ Ganancia disponible</div><div class="sh-pill-val" id="ce-gan">—</div></div>
       </div>
     </div>
   </div>
@@ -2813,14 +2811,13 @@ async function loadCaja(){
 
 function renderCaja(){
   const{jInv,jGan,jRet,eInv,eGan,eRet,movs}=cajaState;
-  const jT=jInv+jGan-jRet, eT=eInv+eGan-eRet;
+  const jGanDisp=jGan-jRet, eGanDisp=eGan-eRet;
+  const jT=jInv+jGanDisp, eT=eInv+eGanDisp;
   document.getElementById('cj-inv').textContent=fmt(jInv);
-  document.getElementById('cj-gan').textContent=fmt(jGan);
-  document.getElementById('cj-ret').textContent=fmt(jRet);
+  document.getElementById('cj-gan').textContent=fmt(jGanDisp);
   document.getElementById('cj-total').textContent=fmt(jT);
   document.getElementById('ce-inv').textContent=fmt(eInv);
-  document.getElementById('ce-gan').textContent=fmt(eGan);
-  document.getElementById('ce-ret').textContent=fmt(eRet);
+  document.getElementById('ce-gan').textContent=fmt(eGanDisp);
   document.getElementById('ce-total').textContent=fmt(eT);
   document.getElementById('caja-movs').innerHTML=movs.slice(0,8).map(m=>{
     const icMap={liquidacion:{cls:'ven',ic:'ti-currency-dollar'},retiro_joseph:{cls:'ret',ic:'ti-wallet'},retiro_emmanuel:{cls:'ret',ic:'ti-wallet'},pago_prestamo:{cls:'pag',ic:'ti-arrow-back-up'}};
