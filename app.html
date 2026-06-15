@@ -1841,27 +1841,34 @@ window.openDetalle = async function(id) {
   </div>`;
   document.getElementById('det-timeline').innerHTML = tlHtml;
 
-  // Aportaciones
-  const distLabel = a.dist_ganancia==='50_50'?'50% gan.':a.dist_ganancia==='100_joseph'?'100% gan.':'—';
-  const distLabelE = a.dist_ganancia==='50_50'?'50% gan.':a.dist_ganancia==='100_emmanuel'?'100% gan.':'—';
-  document.getElementById('det-aportes').innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-      <div style="background:var(--blue-bg);border-radius:12px;padding:10px">
-        <div style="font-size:10px;font-weight:500;color:var(--blue);margin-bottom:4px">Joseph</div>
-        <div style="font-size:13px;font-weight:500;color:var(--blue)">${fmt(a.aporte_joseph||0)}</div>
-        <div style="font-size:10px;color:var(--blue);margin-top:2px">${distLabel}</div>
-      </div>
-      <div style="background:var(--green-bg);border-radius:12px;padding:10px">
-        <div style="font-size:10px;font-weight:500;color:var(--green);margin-bottom:4px">Emmanuel</div>
-        <div style="font-size:13px;font-weight:500;color:var(--green)">${fmt(a.aporte_emmanuel||0)}</div>
-        <div style="font-size:10px;color:var(--green);margin-top:2px">${distLabelE}</div>
-      </div>
-      <div style="background:var(--purple-bg);border-radius:12px;padding:10px">
-        <div style="font-size:10px;font-weight:500;color:var(--purple);margin-bottom:4px">Préstamo</div>
-        <div style="font-size:13px;font-weight:500;color:var(--purple)">${a.usa_prestamo?'$100,000':'No aplica'}</div>
-        <div style="font-size:10px;color:var(--purple);margin-top:2px">Slot papá</div>
-      </div>
-    </div>`;
+  // Aportaciones — calculamos ganancia por socio para mostrar total a recibir
+  {
+    const ganRealA = a.precio_venta_real ? (a.precio_venta_real - (a.costo_total||0)) : null;
+    let ganJA=0, ganEA=0;
+    if(ganRealA!==null){
+      if(a.dist_ganancia==='50_50'){ganJA=ganEA=ganRealA/2;}
+      else if(a.dist_ganancia==='100_joseph'){ganJA=ganRealA;}
+      else if(a.dist_ganancia==='100_emmanuel'){ganEA=ganRealA;}
+    }
+    const totalJA=(a.aporte_joseph||0)+ganJA;
+    const totalEA=(a.aporte_emmanuel||0)+ganEA;
+    const distPctJ=a.dist_ganancia==='50_50'?'50%':a.dist_ganancia==='100_joseph'?'100%':'—';
+    const distPctE=a.dist_ganancia==='50_50'?'50%':a.dist_ganancia==='100_emmanuel'?'100%':'—';
+    document.getElementById('det-aportes').innerHTML = `
+      <div class="card" style="padding:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:0.5px solid var(--bg3)">
+          <div><div style="font-size:12px;font-weight:600;color:var(--blue)">Joseph</div><div style="font-size:11px;color:var(--text3)">Aportó ${fmt(a.aporte_joseph||0)} · ${distPctJ} gan.</div></div>
+          <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--blue)">${ganRealA!==null?fmt(totalJA):'—'}</div><div style="font-size:10px;color:var(--text3)">total a recibir</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;${a.usa_prestamo?'border-bottom:0.5px solid var(--bg3)':''}">
+          <div><div style="font-size:12px;font-weight:600;color:var(--green)">Emmanuel</div><div style="font-size:11px;color:var(--text3)">Aportó ${fmt(a.aporte_emmanuel||0)} · ${distPctE} gan.</div></div>
+          <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--green)">${ganRealA!==null?fmt(totalEA):'—'}</div><div style="font-size:10px;color:var(--text3)">total a recibir</div></div>
+        </div>
+        ${a.usa_prestamo?`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px">
+          <div><div style="font-size:12px;font-weight:600;color:var(--purple)">Préstamo papá</div><div style="font-size:11px;color:var(--text3)">Devuelto al liquidar</div></div>
+          <div style="font-size:13px;font-weight:700;color:var(--purple)">$100,000</div>
+        </div>`:''}
+      </div>`;}
 
   // Gastos
   const gastos = await fetchGastos(id);
@@ -1919,27 +1926,53 @@ window.openDetalle = async function(id) {
   if(gvCat){gvCat.style.background='var(--bg1)';gvCat.style.color='var(--text1)';}
   if(gvFecha){gvFecha.style.background='none';gvFecha.style.color='var(--text3)';}
 
-  // Resumen
-  const costo = a.costo_total||0;
-  const pvEst = a.precio_venta_estimado||0;
-  const pvReal = a.precio_venta_real;
-  const ganEst = pvEst-costo;
-  document.getElementById('det-resumen').innerHTML = `
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3)">
-        <span style="color:var(--text3)">Costo total</span><span class="fw-500">${fmt(costo)}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3);cursor:pointer" onclick="openEditPrecioEst()">
-        <span style="color:var(--text3)">Precio estimado</span><span class="fw-500">${fmt(pvEst)}</span>
-      </div>
-      ${pvReal?`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3)">
-        <span style="color:var(--text3)">Precio real de venta</span><span class="fw-500 text-green">${fmt(pvReal)}</span>
-      </div>`:''}
-      <div style="display:flex;justify-content:space-between;padding:8px 0 4px;font-size:13px">
-        <span class="fw-500">Ganancia ${pvReal?'real':'estimada'}</span>
-        <span class="fw-500 ${ganEst>=0?'text-green':'text-red'}">${ganEst>=0?'+':''}${fmt(ganEst)}</span>
-      </div>
-    </div>`;
+  // Resumen financiero completo
+  {
+    const costo = a.costo_total||0;
+    const pvEst = a.precio_venta_estimado||0;
+    const pvReal = a.precio_venta_real;
+    const gan = pvReal ? pvReal-costo : pvEst-costo;
+    const isVendido = a.status==='vendido';
+    const diasT = a.dias_total || diasEntre(a.fecha_compra, today());
+    const row=(lbl,val,cls='',bb=true)=>`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px${bb?';border-bottom:0.5px solid var(--bg3)':''}"><span style="color:var(--text3)">${lbl}</span><span class="${cls}">${val}</span></div>`;
+    const etapaLabels={compra:'Compra',transporte_usa:'Transporte USA',importacion:'Importación',transporte_tepic:'Transporte a Tepic'};
+    const etapasHtml=(window._etapasActuales||[]).filter(e=>e.monto_mxn>0).map(e=>row(etapaLabels[e.tipo]||e.tipo,fmt(e.monto_mxn),'fw-500')).join('');
+    const gastosHtml=a.total_gastos>0?row('Reparaciones y gastos',fmt(a.total_gastos),'fw-500'):'';
+    let rendHtml='';
+    if(isVendido&&pvReal&&diasT>0){
+      const ganMes=gan/diasT*30;
+      const ganAnual=gan/diasT*365;
+      const rendAnual=costo>0?(ganAnual/costo*100):0;
+      const gc=gan>=0?'text-green':'text-red';
+      const rc=rendAnual>=0?'text-green':'text-red';
+      rendHtml=`<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--bg3)">
+        <div style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;margin-bottom:6px">RENDIMIENTO</div>
+        ${row('Días en inventario',diasT)}
+        ${row('Ganancia a mes','$'+Math.abs(Math.round(ganMes)).toLocaleString()+'/mes',gc)}
+        ${row('Ganancia anual','$'+Math.abs(Math.round(ganAnual)).toLocaleString()+'/año',gc)}
+        <div style="display:flex;justify-content:space-between;padding:6px 0 2px;font-size:14px;font-weight:700"><span>Rendimiento anual</span><span class="${rc}">${rendAnual>=0?'':'−'}${Math.abs(rendAnual).toFixed(1)}%</span></div>
+      </div>`;
+    }
+    document.getElementById('det-resumen').innerHTML=`
+      <div class="card">
+        <div style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;margin-bottom:6px">DESGLOSE DE COSTOS</div>
+        ${etapasHtml}
+        ${gastosHtml}
+        <div style="display:flex;justify-content:space-between;padding:7px 0 2px;font-size:13px;font-weight:700;margin-top:2px">
+          <span>Total invertido</span><span>${fmt(costo)}</span>
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--bg3)">
+          <div style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;margin-bottom:6px">VENTA</div>
+          ${pvReal
+            ? row('Precio real de venta',fmt(pvReal),'text-green fw-500')
+            : `<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3);cursor:pointer" onclick="openEditPrecioEst()"><span style="color:var(--text3)">Precio estimado</span><span class="fw-500">${fmt(pvEst)}</span></div>`}
+          <div style="display:flex;justify-content:space-between;padding:7px 0 2px;font-size:14px;font-weight:700">
+            <span>Ganancia ${pvReal?'real':'estimada'}</span>
+            <span class="${gan>=0?'text-green':'text-red'}">${gan>=0?'+':'−'}${fmt(Math.abs(gan))}</span>
+          </div>
+        </div>
+        ${rendHtml}
+      </div>`;}
 
   // Botones de acción según status
   let liqHtml = '';
@@ -3033,6 +3066,18 @@ async function loadStats(){
   const ganTotal=vendidos.reduce((s,a)=>s+(a.ganancia_real||0),0);
   const diasProm=vendidos.filter(a=>a.dias_total).reduce((s,a,_,arr)=>s+a.dias_total/arr.length,0);
   const costosProm=autos.reduce((s,a,_,arr)=>s+(a.costo_total||0)/arr.length,0);
+  // Ganancia por socio y rendimiento anual por carro
+  let jGanTotal=0,eGanTotal=0,rendVals=[];
+  vendidos.forEach(a=>{
+    const gan=a.ganancia_real||0;
+    let ganJ=0,ganE=0;
+    if(a.dist_ganancia==='50_50'){ganJ=ganE=gan/2;}
+    else if(a.dist_ganancia==='100_joseph'){ganJ=gan;}
+    else if(a.dist_ganancia==='100_emmanuel'){ganE=gan;}
+    jGanTotal+=ganJ; eGanTotal+=ganE;
+    if(a.dias_total>0&&a.costo_total>0) rendVals.push((gan/a.costo_total)*(365/a.dias_total)*100);
+  });
+  const rendProm=rendVals.length?rendVals.reduce((s,r)=>s+r,0)/rendVals.length:0;
   document.getElementById('stats-sub').textContent=`${autos.length} autos · ${new Date().getFullYear()}`;
   document.getElementById('stats-kpis').innerHTML=`
     <div class="stat-card dark">
@@ -3106,13 +3151,23 @@ async function loadStats(){
     <div class="cap-card j">
       <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Joseph</div>
       <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(jInv)}</span></div>
-      <div class="cap-total"><span style="font-size:10px;color:var(--text3)">En negocio</span><span class="cap-total-val">${fmt(jInv)}</span></div>
+      <div class="cap-row2"><span class="cap-lbl">Ganancia acum.</span><span class="cap-val text-green">${fmt(jGanTotal)}</span></div>
+      <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Total ganado</span><span class="cap-total-val">${fmt(jInv+jGanTotal)}</span></div>
     </div>
     <div class="cap-card e">
       <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Emmanuel</div>
       <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(eInv)}</span></div>
-      <div class="cap-total"><span style="font-size:10px;color:var(--text3)">En negocio</span><span class="cap-total-val">${fmt(eInv)}</span></div>
+      <div class="cap-row2"><span class="cap-lbl">Ganancia acum.</span><span class="cap-val text-green">${fmt(eGanTotal)}</span></div>
+      <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Total ganado</span><span class="cap-total-val">${fmt(eInv+eGanTotal)}</span></div>
     </div>`;
+  // Rendimiento anual promedio
+  if(rendProm!==0){
+    const rendEl=document.getElementById('stats-socios');
+    rendEl.insertAdjacentHTML('afterend',`<div style="margin:0 20px 8px;background:var(--bg2);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:12px;color:var(--text3)">Rendimiento anual promedio</div>
+      <div style="font-size:18px;font-weight:700;color:${rendProm>=0?'var(--green)':'var(--red)'}">${rendProm>=0?'':'-'}${Math.abs(rendProm).toFixed(1)}%</div>
+    </div>`);
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────
