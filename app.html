@@ -595,13 +595,16 @@
     </div>
   </div>
 
-  <!-- Gastos por categoría -->
-  <div style="padding:16px 20px 8px;font-size:12px;font-weight:500;color:var(--text3)">Gastos por categoría</div>
+  <!-- Gastos: toggle categoría / fecha -->
+  <div style="padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:12px;font-weight:500;color:var(--text3)">Gastos</div>
+    <div style="display:flex;gap:2px;background:var(--bg2);border-radius:8px;padding:2px">
+      <button id="gv-btn-cat" onclick="setGastosVista('cat')" style="font-size:11px;font-weight:500;padding:3px 10px;border-radius:6px;border:none;cursor:pointer;font-family:var(--font);transition:all 0.15s;background:var(--bg1);color:var(--text1)">Categoría</button>
+      <button id="gv-btn-fecha" onclick="setGastosVista('fecha')" style="font-size:11px;font-weight:500;padding:3px 10px;border-radius:6px;border:none;cursor:pointer;font-family:var(--font);transition:all 0.15s;background:none;color:var(--text3)">Por fecha</button>
+    </div>
+  </div>
   <div class="gastos-list" id="det-cats"></div>
-
-  <!-- Gastos recientes -->
-  <div style="padding:16px 20px 8px;font-size:12px;font-weight:500;color:var(--text3)">Gastos recientes</div>
-  <div class="gastos-list" id="det-gastos"></div>
+  <div class="gastos-list" id="det-gastos" style="display:none"></div>
 
   <!-- Resumen financiero -->
   <div style="padding:16px 20px 8px;font-size:12px;font-weight:500;color:var(--text3)">Resumen financiero</div>
@@ -1388,6 +1391,7 @@ const CAT = [
   {id:'llantas',name:'Llantas',desc:'Compra, reparación, alineación',ic:'ti-circle',bg:'var(--bg3)',ic_c:'var(--text2)'},
   {id:'accesorios',name:'Accesorios',desc:'Hules, cristales, tapetes',ic:'ti-package',bg:'var(--blue-bg)',ic_c:'var(--blue)'},
   {id:'movilidad',name:'Movilidad',desc:'Gasolina, traslados, fletes',ic:'ti-gas-station',bg:'var(--purple-bg)',ic_c:'var(--purple)'},
+  {id:'comision',name:'Comisión por venta',desc:'Honorarios al vendedor',ic:'ti-coin',bg:'var(--orange-bg)',ic_c:'var(--orange)'},
   {id:'otros',name:'Otros',desc:'Lo que no encaje arriba',ic:'ti-dots',bg:'var(--bg3)',ic_c:'var(--text3)'},
 ];
 const ETAPAS_CONFIG = [
@@ -1442,7 +1446,13 @@ window.goScreen = function(id) {
 window.goBack = () => goScreen(prevScreen || 'dashboard');
 window.goScreenWithAuto = function(s) {
   if(autoActual) {
-    if(s==='gasto'){gSelAutoById(autoActual.id);gotoGasto=true;}
+    if(s==='gasto'){
+      const _id = autoActual.id;
+      gAutoId = _id;
+      goScreen('gasto');
+      gSelAutoById(_id);
+      return;
+    }
     if(s==='simulador'){initSimulador(autoActual);}
   }
   goScreen(s);
@@ -1785,10 +1795,10 @@ window.openDetalle = async function(id) {
         </div>`;}).join('')
     : '<div style="padding:12px 20px;font-size:13px;color:var(--text3)">Sin gastos</div>';
 
-  // Gastos recientes
+  // Gastos por fecha (vista "Por fecha" del toggle — oculto por defecto)
   const detGastosEl = document.getElementById('det-gastos');
   if(detGastosEl) detGastosEl.innerHTML = gastos.length
-    ? gastos.slice(0,5).map((g,idx)=>{
+    ? gastos.map((g,idx)=>{
         const c=catInfo(g.categoria);
         return `<div class="gasto-item" onclick="abrirGastoDetalle(${idx})" style="cursor:pointer">
           <div class="g-ic" style="background:${c.bg}"><i class="ti ${c.ic}" style="color:${c.ic_c}"></i></div>
@@ -1805,8 +1815,13 @@ window.openDetalle = async function(id) {
           </div>
           <i class="ti ti-chevron-right" style="font-size:14px;color:var(--text3);flex-shrink:0;align-self:center"></i>
         </div>`;}).join('')
-        + (gastos.length>5?`<div style="text-align:center;padding:8px;font-size:12px;color:var(--blue);cursor:pointer;border-top:0.5px solid var(--border)" onclick="verTodosGastos()">Ver todos (${gastos.length})</div>`:'')
     : '<div style="padding:12px 20px;font-size:13px;color:var(--text3)">Sin gastos registrados</div>';
+  // Asegurar vista categoría al abrir
+  document.getElementById('det-cats').style.display='';
+  document.getElementById('det-gastos').style.display='none';
+  const gvCat=document.getElementById('gv-btn-cat');const gvFecha=document.getElementById('gv-btn-fecha');
+  if(gvCat){gvCat.style.background='var(--bg1)';gvCat.style.color='var(--text1)';}
+  if(gvFecha){gvFecha.style.background='none';gvFecha.style.color='var(--text3)';}
 
   // Resumen
   const costo = a.costo_total||0;
@@ -1999,6 +2014,18 @@ window.updateEtapaResumen = function(a) {
   const ch = document.getElementById('det-etapa-chevron');
   if(wrap) wrap.style.display='none';
   if(ch) ch.style.transform='rotate(0deg)';
+};
+
+window.setGastosVista = function(v) {
+  const isCat = v==='cat';
+  const catEl=document.getElementById('det-cats');
+  const fechaEl=document.getElementById('det-gastos');
+  const btnCat=document.getElementById('gv-btn-cat');
+  const btnFecha=document.getElementById('gv-btn-fecha');
+  if(catEl) catEl.style.display=isCat?'':'none';
+  if(fechaEl) fechaEl.style.display=isCat?'none':'';
+  if(btnCat){btnCat.style.background=isCat?'var(--bg1)':'none';btnCat.style.color=isCat?'var(--text1)':'var(--text3)';}
+  if(btnFecha){btnFecha.style.background=!isCat?'var(--bg1)':'none';btnFecha.style.color=!isCat?'var(--text1)':'var(--text3)';}
 };
 
 window.verGastosPorCat = function(catId) {
