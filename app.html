@@ -1956,7 +1956,17 @@ window.openDetalle = async function(id) {
       </div>`;
     }
     document.getElementById('det-resumen').innerHTML=`
-      <div class="card">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="background:#111;padding:16px;display:flex;align-items:center;gap:14px">
+          <div style="background:#222;border-radius:14px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="ti ti-car" style="font-size:24px;color:#fff"></i>
+          </div>
+          <div>
+            <div style="font-size:18px;font-weight:700;color:#fff;letter-spacing:.3px">${a.anio} ${a.marca} ${a.modelo}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:3px">VIN: ${a.vin||'N/D'} · ${a.fecha_compra||'—'}</div>
+          </div>
+        </div>
+        <div style="padding:14px 16px">
         <div style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;margin-bottom:6px">DESGLOSE DE COSTOS</div>
         ${etapasHtml}
         ${gastosHtml}
@@ -1974,6 +1984,7 @@ window.openDetalle = async function(id) {
           </div>
         </div>
         ${rendHtml}
+        </div>
       </div>`;}
 
   // Botones de acción según status
