@@ -1937,7 +1937,9 @@ window.openDetalle = async function(id) {
     const row=(lbl,val,cls='',bb=true)=>`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px${bb?';border-bottom:0.5px solid var(--bg3)':''}"><span style="color:var(--text3)">${lbl}</span><span class="${cls}">${val}</span></div>`;
     const etapaLabels={compra:'Compra',transporte_usa:'Transporte USA',importacion:'Importación',transporte_tepic:'Transporte a Tepic'};
     const etapasHtml=(window._etapasActuales||[]).filter(e=>e.monto_mxn>0).map(e=>row(etapaLabels[e.tipo]||e.tipo,fmt(e.monto_mxn),'fw-500')).join('');
-    const gastosHtml=a.total_gastos>0?row('Reparaciones y gastos',fmt(a.total_gastos),'fw-500'):'';
+    const gastosG=gastos.filter(g=>g.categoria!=='comision').reduce((s,g)=>s+g.monto,0);
+    const comisionG=gastos.filter(g=>g.categoria==='comision').reduce((s,g)=>s+g.monto,0);
+    const gastosHtml=(gastosG>0?row('Reparaciones y gastos',fmt(gastosG),'fw-500'):'')+(comisionG>0?row('Comisión por venta',fmt(comisionG),'fw-500'):'');
     let rendHtml='';
     if(isVendido&&pvReal&&diasT>0){
       const ganMes=gan/diasT*30;
