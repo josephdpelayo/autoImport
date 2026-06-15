@@ -1466,6 +1466,54 @@ window.closeSheet = (id,e) => {if(e.target===document.getElementById(id)||!e.tar
 window.showLogout = () => openSheet('logout-sheet');
 window.doLogout = async () => { await sb.auth.signOut(); window.location.href='/index.html'; };
 
+// ── Push Notifications ────────────────────────────────────────
+const VAPID_PUBLIC_KEY = 'BImwXpzuEn9MRZuP1C-f2nU2lgK7QG_T28EP920LJWUd0_MsQb4G7mF63ekIvX49zltfNdKZIKw5AqMS-rtIVK8';
+const PUSH_EDGE_URL = 'https://vxwmheehqqzybucaunkj.supabase.co/functions/v1/send-push';
+
+function _b64ToUint8(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g,'+').replace(/_/g,'/'));
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+
+async function initPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: _b64ToUint8(VAPID_PUBLIC_KEY),
+      });
+    }
+    const j = sub.toJSON();
+    await sb.from('push_suscripciones').upsert({
+      socio_id: sesion.user.id,
+      endpoint: j.endpoint,
+      p256dh: j.keys.p256dh,
+      auth: j.keys.auth,
+    }, { onConflict: 'endpoint' });
+  } catch(e) { console.warn('Push init:', e); }
+}
+
+window.notif = async function(titulo, cuerpo, datos = {}) {
+  try {
+    await fetch(PUSH_EDGE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sesion?.access_token}`,
+        'apikey': SUPABASE_KEY,
+      },
+      body: JSON.stringify({ titulo, cuerpo, datos }),
+    });
+  } catch(e) { console.warn('notif:', e); }
+};
+
 async function init() {
   const {data:{session}} = await sb.auth.getSession();
   if(!session){window.location.href='/index.html';return;}
@@ -1478,6 +1526,7 @@ async function init() {
   document.getElementById('db-avatar').textContent = socio?.avatar || socio?.nombre?.slice(0,2) || 'US';
   document.getElementById('fab').style.display = 'flex';
   loadDashboard();
+  initPush();
 }
 
 // ── Dashboard ──────────────────────────────────────────────────
@@ -2140,6 +2189,8 @@ window.guardarEtapa = async function() {
     }
     document.getElementById('etapa-sheet').classList.remove('show');
     showToast('Etapa guardada ✓');
+    const _autoNE = autoActual ? `${autoActual.anio} ${autoActual.marca} ${autoActual.modelo}` : '';
+    notif(`Etapa actualizada · ${_autoNE}`, `${etapaInfo(tipo).name}${completado?' ✓':''}`, {tipo:'etapa',auto_id:autoId});
     if(autoActual) openDetalle(autoActual.id);
   } catch(e) { showToast('Error: '+e.message); }
 };
@@ -2478,6 +2529,7 @@ window.naGuardar = async function() {
     }
 
     showToast(`${marca} ${modelo} guardado ✓`);
+    notif('Nuevo auto ingresado', `${anio} ${marca} ${modelo?.toUpperCase()}`, {tipo:'nuevo_auto'});
     setTimeout(()=>goScreen('autos'),1200);
   } catch(e) {
     console.error(e);
@@ -2491,11 +2543,12 @@ window.naGuardar = async function() {
 let gTipo='operacion', gCat=null, gAutoId=null, gQuien=null, gFotoFile=null;
 
 function initGasto() {
+  const _preserveEditId = window._editandoGastoId;
   gTipo='operacion'; gCat=null; gFotoFile=null;
   document.getElementById('g-monto').value='';
   document.getElementById('g-nota').value='';
   if(document.getElementById('g-proveedor')) document.getElementById('g-proveedor').value='';
-  window._editandoGastoId = null;
+  window._editandoGastoId = _preserveEditId;
   const gBtn = document.getElementById('g-guardar-btn');
   if(gBtn) gBtn.innerHTML = '<i class="ti ti-check"></i>Guardar registro';
   document.getElementById('g-fecha').value=today();
@@ -2667,6 +2720,18 @@ window.gGuardar = async function(){
     }
     btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i>Guardar registro';
     showToast(gTipo==='etapa'?'Etapa registrada ✓':'Gasto guardado ✓');
+    // Notificación push
+    const _autoN = autoActual ? `${autoActual.anio} ${autoActual.marca} ${autoActual.modelo}` : '';
+    if(gTipo==='etapa'){
+      notif(`Etapa registrada · ${_autoN}`, etapaInfo(gCat).name, {tipo:'etapa',auto_id:gAutoId});
+    } else {
+      const _esEdit = !!window._editandoGastoId;
+      notif(
+        `Gasto ${_esEdit?'actualizado':'nuevo'} · ${_autoN}`,
+        `${catInfo(gCat).name}: $${Math.round(monto).toLocaleString('es-MX')} — ${notaVal}`,
+        {tipo:'gasto', auto_id:gAutoId}
+      );
+    }
     setTimeout(()=>{
       if(autoActual&&gAutoId===autoActual.id){openDetalle(autoActual.id);goScreen('detalle');}
       else goScreen('autos');
@@ -2786,6 +2851,7 @@ window.liqEjecutar = async function(){
     }
     document.getElementById('liq-sheet').classList.remove('show');
     showToast('Liquidación registrada ✓');
+    notif('¡Auto vendido! 🎉', `${a.anio} ${a.marca} ${a.modelo} — $${Math.round(precio).toLocaleString('es-MX')}`, {tipo:'venta',auto_id:id});
     await fetchAutos();
     loadCaja();
   } catch(e){showToast('Error: '+e.message);}
