@@ -1597,7 +1597,7 @@ async function loadDashboard() {
       <div class="stat-card dark">
         <div class="stat-ic" style="background:rgba(255,255,255,0.1)"><i class="ti ti-trending-up" style="color:#fff"></i></div>
         <div class="stat-label">Ganancia total</div>
-        <div class="stat-val">${fmt(ganTotal)}</div>
+        <div class="stat-val" style="color:${ganTotal<0?'var(--red)':'#fff'}">${ganTotal<0?'−':''}${fmt(ganTotal)}</div>
         <div class="stat-sub">${vendidos.length} autos vendidos</div>
       </div>
       <div class="stat-card">
@@ -1641,12 +1641,12 @@ async function loadDashboard() {
       <div class="cap-card j">
         <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Joseph</div>
         <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(jInv)}</span></div>
-        <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Disponible para retirar</span><span class="cap-total-val">${fmt(jDisp)}</span></div>
+        <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Disponible para retirar</span><span class="cap-total-val" style="color:${jDisp<0?'var(--red)':''}">${jDisp<0?'−':''}${fmt(jDisp)}</span></div>
       </div>
       <div class="cap-card e">
         <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Emmanuel</div>
         <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(eInv)}</span></div>
-        <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Disponible para retirar</span><span class="cap-total-val">${fmt(eDisp)}</span></div>
+        <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Disponible para retirar</span><span class="cap-total-val" style="color:${eDisp<0?'var(--red)':''}">${eDisp<0?'−':''}${fmt(eDisp)}</span></div>
       </div>`;
   } catch(e){console.error(e);}
 
@@ -1702,7 +1702,7 @@ function autoCardHtml(a) {
   const diasTotal = a.dias_total || (a.fecha_compra ? diasEntre(a.fecha_compra, today()) : 0);
   const gan = a.status==='vendido' ? a.ganancia_real : a.ganancia_estimada;
   const ganHtml = gan!=null
-    ? `<div class="auto-gain ${gan>=0?'text-green':'text-red'}">${gan>=0?'+':''}${fmt(gan)}</div><div class="auto-dias">${a.status==='vendido'?'ganancia':'est.'}</div>`
+    ? `<div class="auto-gain ${gan>=0?'text-green':'text-red'}">${gan>=0?'+':'−'}${fmt(gan)}</div><div class="auto-dias">${a.status==='vendido'?'ganancia':'est.'}</div>`
     : `<div class="auto-gain text-muted">${fmt(a.precio_venta_estimado||0)}</div><div class="auto-dias">precio est.</div>`;
   return `<div class="auto-card" onclick="openDetalle('${a.id}')">
     <div class="auto-thumb" style="background:${thumbBg}"><i class="ti ${thumbIc}" style="color:${color};font-size:22px"></i></div>
@@ -1867,11 +1867,11 @@ window.openDetalle = async function(id) {
       <div class="card" style="padding:0">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:0.5px solid var(--bg3)">
           <div><div style="font-size:12px;font-weight:600;color:var(--blue)">Joseph</div><div style="font-size:11px;color:var(--text3)">Aportó ${fmt(a.aporte_joseph||0)} · ${distPctJ} gan.</div></div>
-          <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--blue)">${ganRealA!==null?fmt(totalJA):'—'}</div><div style="font-size:10px;color:var(--text3)">total a recibir</div></div>
+          <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:${ganRealA!==null&&totalJA<0?'var(--red)':'var(--blue)'}">${ganRealA!==null?(totalJA<0?'−':'')+fmt(totalJA):'—'}</div><div style="font-size:10px;color:var(--text3)">${ganRealA!==null&&totalJA<0?'a pagar':'total a recibir'}</div></div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;${a.usa_prestamo?'border-bottom:0.5px solid var(--bg3)':''}">
           <div><div style="font-size:12px;font-weight:600;color:var(--green)">Emmanuel</div><div style="font-size:11px;color:var(--text3)">Aportó ${fmt(a.aporte_emmanuel||0)} · ${distPctE} gan.</div></div>
-          <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--green)">${ganRealA!==null?fmt(totalEA):'—'}</div><div style="font-size:10px;color:var(--text3)">total a recibir</div></div>
+          <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:${ganRealA!==null&&totalEA<0?'var(--red)':'var(--green)'}">${ganRealA!==null?(totalEA<0?'−':'')+fmt(totalEA):'—'}</div><div style="font-size:10px;color:var(--text3)">${ganRealA!==null&&totalEA<0?'a pagar':'total a recibir'}</div></div>
         </div>
         ${a.usa_prestamo?`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px">
           <div><div style="font-size:12px;font-weight:600;color:var(--purple)">Préstamo papá</div><div style="font-size:11px;color:var(--text3)">Devuelto al liquidar</div></div>
@@ -1959,8 +1959,8 @@ window.openDetalle = async function(id) {
       rendHtml=`<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--bg3)">
         <div style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.5px;margin-bottom:6px">RENDIMIENTO</div>
         ${row('Días en inventario',diasT)}
-        ${row('Ganancia a mes','$'+Math.abs(Math.round(ganMes)).toLocaleString()+'/mes',gc)}
-        ${row('Ganancia anual','$'+Math.abs(Math.round(ganAnual)).toLocaleString()+'/año',gc)}
+        ${row('Ganancia a mes',(ganMes>=0?'':'−')+'$'+Math.abs(Math.round(ganMes)).toLocaleString()+'/mes',gc)}
+        ${row('Ganancia anual',(ganAnual>=0?'':'−')+'$'+Math.abs(Math.round(ganAnual)).toLocaleString()+'/año',gc)}
         <div style="display:flex;justify-content:space-between;padding:6px 0 2px;font-size:14px;font-weight:700"><span>Rendimiento anual</span><span class="${rc}">${rendAnual>=0?'':'−'}${Math.abs(rendAnual).toFixed(1)}%</span></div>
       </div>`;
     }
@@ -2399,7 +2399,8 @@ window.compartirResumen = function() {
   const gastosLineas=Object.keys(catTotales).length
     ?'\n\nGastos:\n'+Object.keys(catTotales).map(cid=>`  ${catTotales[cid].name}: ${fmt(catTotales[cid].total)}`).join('\n')
     :'';
-  const texto=`${a.anio} ${a.marca} ${a.modelo}\nVIN: ${a.vin||'N/D'}\nStatus: ${a.status}\nCosto total: ${fmt(a.costo_total||0)}\nPrecio estimado: ${fmt(a.precio_venta_estimado||0)}\nGanancia est.: ${fmt((a.precio_venta_estimado||0)-(a.costo_total||0))}\nDías en inventario: ${a.dias_total||'—'}${gastosLineas}`;
+  const ganShare=(a.precio_venta_estimado||0)-(a.costo_total||0);
+  const texto=`${a.anio} ${a.marca} ${a.modelo}\nVIN: ${a.vin||'N/D'}\nStatus: ${a.status}\nCosto total: ${fmt(a.costo_total||0)}\nPrecio estimado: ${fmt(a.precio_venta_estimado||0)}\nGanancia est.: ${ganShare>=0?'+':'−'}${fmt(ganShare)}\nDías en inventario: ${a.dias_total||'—'}${gastosLineas}`;
   if(navigator.share){navigator.share({title:`${a.anio} ${a.marca} ${a.modelo}`,text:texto});}
   else{navigator.clipboard?.writeText(texto).then(()=>showToast('Copiado al portapapeles'));}
 };
@@ -2518,7 +2519,7 @@ window.naCalcTotal = function() {
   document.getElementById('na-resumen-costos').innerHTML = `
     ${rows.map(r=>`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:0.5px solid var(--bg3)"><span style="color:var(--text3)">${r[0]}</span><span class="fw-500">${fmt(r[1])}</span></div>`).join('')}
     <div style="display:flex;justify-content:space-between;padding:8px 0 4px;font-size:13px"><span class="fw-500">Costo total estimado</span><span class="fw-500">${total>0?fmt(total):'—'}</span></div>
-    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px"><span style="color:var(--text3)">Ganancia estimada</span><span class="fw-500 ${gan>=0?'text-green':'text-red'}">${pventa>0&&total>0?(gan>=0?'+':'')+ fmt(gan):'—'}</span></div>`;
+    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px"><span style="color:var(--text3)">Ganancia estimada</span><span class="fw-500 ${gan>=0?'text-green':'text-red'}">${pventa>0&&total>0?(gan>=0?'+':'−')+fmt(gan):'—'}</span></div>`;
 };
 
 window.naSetFuente = function(f) {
@@ -2544,7 +2545,7 @@ window.naCalcResumen = function() {
   document.getElementById('na-r-costo').textContent=costo>0?fmt(costo):'—';
   document.getElementById('na-r-venta').textContent=pventa>0?fmt(pventa):'—';
   const ganEl=document.getElementById('na-r-gan');
-  ganEl.textContent=pventa>0&&costo>0?(gan>=0?'+':'')+fmt(gan):'—';
+  ganEl.textContent=pventa>0&&costo>0?(gan>=0?'+':'−')+fmt(gan):'—';
   ganEl.className='res-val '+(gan>=0?'pos':'');
   document.getElementById('na-rc-j').textContent=apJ>0?fmt(apJ):'—';
   document.getElementById('na-rc-e').textContent=apE>0?fmt(apE):'—';
@@ -2870,11 +2871,13 @@ function renderCaja(){
   const jGanDisp=jGan-jRet, eGanDisp=eGan-eRet;
   const jT=jInv+jGanDisp, eT=eInv+eGanDisp;
   document.getElementById('cj-inv').textContent=fmt(jInv);
-  document.getElementById('cj-gan').textContent=fmt(jGanDisp);
-  document.getElementById('cj-total').textContent=fmt(jT);
+  document.getElementById('cj-gan').textContent=(jGanDisp<0?'−':'+')+fmt(jGanDisp);
+  document.getElementById('cj-total').textContent=(jT<0?'−':'')+fmt(jT);
+  document.getElementById('cj-total').style.color=jT<0?'var(--red)':'';
   document.getElementById('ce-inv').textContent=fmt(eInv);
-  document.getElementById('ce-gan').textContent=fmt(eGanDisp);
-  document.getElementById('ce-total').textContent=fmt(eT);
+  document.getElementById('ce-gan').textContent=(eGanDisp<0?'−':'+')+fmt(eGanDisp);
+  document.getElementById('ce-total').textContent=(eT<0?'−':'')+fmt(eT);
+  document.getElementById('ce-total').style.color=eT<0?'var(--red)':'';
   document.getElementById('caja-movs').innerHTML=movs.slice(0,8).map(m=>{
     const icMap={liquidacion:{cls:'ven',ic:'ti-currency-dollar'},retiro_joseph:{cls:'ret',ic:'ti-wallet'},retiro_emmanuel:{cls:'ret',ic:'ti-wallet'},pago_prestamo:{cls:'pag',ic:'ti-arrow-back-up'}};
     const{cls='ven',ic='ti-coin'}=icMap[m.tipo]||{};
@@ -2964,7 +2967,7 @@ window.retCalc = function(){
   if(!m){prev.classList.add('hidden');return;}
   const disp=retQ==='j'?(cajaState.jInv+cajaState.jGan-cajaState.jRet):(cajaState.eInv+cajaState.eGan-cajaState.eRet);
   const over=m>disp;
-  document.getElementById('rp-disp').textContent=fmt(disp);
+  document.getElementById('rp-disp').textContent=(disp<0?'−':'')+fmt(disp);
   document.getElementById('rp-ret').textContent='-'+fmt(m);
   document.getElementById('rp-rest').textContent=fmt(Math.max(0,disp-m));
   document.getElementById('ret-warn').classList.toggle('hidden',!over);
@@ -3051,7 +3054,7 @@ window.simCalc = function(){
   const gan=pv-costo;
   const ganEl=document.getElementById('sim-gan');
   if(!pv){ganEl.textContent='Ingresa precio';ganEl.className='sim-gan zero';}
-  else{ganEl.textContent=(gan>=0?'+':'')+fmt(gan);ganEl.className='sim-gan '+(gan>0?'pos':gan<0?'neg':'zero');}
+  else{ganEl.textContent=(gan>=0?'+':'−')+fmt(gan);ganEl.className='sim-gan '+(gan>0?'pos':gan<0?'neg':'zero');}
   const rend=costo>0?((gan/costo)*100).toFixed(1)+'%':'—';
   document.getElementById('sim-rend').textContent=pv?rend:'—';
   const a=simAuto;
@@ -3059,8 +3062,9 @@ window.simCalc = function(){
   if(a.dist_ganancia==='50_50'){ganJ=ganE=gan/2;}
   else if(a.dist_ganancia==='100_joseph'){ganJ=gan;}
   else if(a.dist_ganancia==='100_emmanuel'){ganE=gan;}
-  document.getElementById('sim-j').textContent=pv?fmt((a.aporte_joseph||0)+ganJ):'—';
-  document.getElementById('sim-e').textContent=pv?fmt((a.aporte_emmanuel||0)+ganE):'—';
+  const simTotJ=(a.aporte_joseph||0)+ganJ, simTotE=(a.aporte_emmanuel||0)+ganE;
+  document.getElementById('sim-j').textContent=pv?(simTotJ<0?'−':'')+fmt(simTotJ):'—';
+  document.getElementById('sim-e').textContent=pv?(simTotE<0?'−':'')+fmt(simTotE):'—';
   const el=document.getElementById('sim-total-val');
   if(el) el.textContent=fmt(costo);
 };
@@ -3077,7 +3081,8 @@ window.simCompartir = function(){
   else if(a.dist_ganancia==='100_joseph'){ganJ=gan;}
   else{ganE=gan;}
   const extras=simGastosSim.length?'\n🔧 Gastos simulados:\n'+simGastosSim.map(g=>`   • ${g.nombre}: ${fmt(g.monto)}`).join('\n'):'';
-  const msg=`🚗 *Simulación ${a.anio} ${a.marca} ${a.modelo}*\n\n💰 Precio: ${fmt(pv)}\n📦 Costo: ${fmt(costo)}${extras}\n\n${gan>=0?'✅':'⚠️'} Ganancia: ${(gan>=0?'+':'')+fmt(gan)}\n\n👤 Joseph: ${fmt((a.aporte_joseph||0)+ganJ)}\n👤 Emmanuel: ${fmt((a.aporte_emmanuel||0)+ganE)}\n\n_Solo simulación_`;
+  const totJ=(a.aporte_joseph||0)+ganJ, totE=(a.aporte_emmanuel||0)+ganE;
+  const msg=`🚗 *Simulación ${a.anio} ${a.marca} ${a.modelo}*\n\n💰 Precio: ${fmt(pv)}\n📦 Costo: ${fmt(costo)}${extras}\n\n${gan>=0?'✅':'⚠️'} Ganancia: ${(gan>=0?'+':'−')+fmt(gan)}\n\n👤 Joseph: ${totJ>=0?'':'−'}${fmt(totJ)}\n👤 Emmanuel: ${totE>=0?'':'−'}${fmt(totE)}\n\n_Solo simulación_`;
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 };
 
@@ -3104,7 +3109,7 @@ async function loadStats(){
   document.getElementById('stats-kpis').innerHTML=`
     <div class="stat-card dark">
       <div class="stat-label">Ganancia total</div>
-      <div class="stat-val">${fmt(ganTotal)}</div>
+      <div class="stat-val" style="color:${ganTotal<0?'var(--red)':'#fff'}">${ganTotal<0?'−':''}${fmt(ganTotal)}</div>
       <div class="stat-sub">${vendidos.length} vendidos</div>
     </div>
     <div class="stat-card">
@@ -3145,7 +3150,7 @@ async function loadStats(){
           ${pvReal?`<div class="bar-fill ${diff<0?'under':''}" style="width:${pctReal}%"></div>`:'<div class="bar-fill" style="width:${pctEst}%;background:var(--border)"></div>'}
         </div>
         <div style="font-size:10px;color:var(--text3)">
-          Est: ${fmt(pvEst)}${diff!=null?` · Dif: ${diff>=0?'+':''}${fmt(diff)}`:''}
+          Est: ${fmt(pvEst)}${diff!=null?` · Dif: ${diff>=0?'+':'−'}${fmt(diff)}`:''}
           ${a.dias_total?` · ${a.dias_total} días`:''}
         </div>
       </div>`;}).join('')}`;
@@ -3173,14 +3178,14 @@ async function loadStats(){
     <div class="cap-card j">
       <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Joseph</div>
       <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(jInv)}</span></div>
-      <div class="cap-row2"><span class="cap-lbl">Ganancia acum.</span><span class="cap-val text-green">${fmt(jGanTotal)}</span></div>
-      <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Total ganado</span><span class="cap-total-val">${fmt(jInv+jGanTotal)}</span></div>
+      <div class="cap-row2"><span class="cap-lbl">Ganancia acum.</span><span class="cap-val ${jGanTotal<0?'text-red':'text-green'}">${jGanTotal<0?'−':''}${fmt(jGanTotal)}</span></div>
+      <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Total ganado</span><span class="cap-total-val">${(jInv+jGanTotal)<0?'−':''}${fmt(jInv+jGanTotal)}</span></div>
     </div>
     <div class="cap-card e">
       <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Emmanuel</div>
       <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(eInv)}</span></div>
-      <div class="cap-row2"><span class="cap-lbl">Ganancia acum.</span><span class="cap-val text-green">${fmt(eGanTotal)}</span></div>
-      <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Total ganado</span><span class="cap-total-val">${fmt(eInv+eGanTotal)}</span></div>
+      <div class="cap-row2"><span class="cap-lbl">Ganancia acum.</span><span class="cap-val ${eGanTotal<0?'text-red':'text-green'}">${eGanTotal<0?'−':''}${fmt(eGanTotal)}</span></div>
+      <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Total ganado</span><span class="cap-total-val">${(eInv+eGanTotal)<0?'−':''}${fmt(eInv+eGanTotal)}</span></div>
     </div>`;
   // Rendimiento anual promedio
   if(rendProm!==0){
