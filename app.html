@@ -1589,6 +1589,9 @@ async function loadDashboard() {
     const vendidos = autos.filter(a=>a.status==='vendido');
     const ganTotal = vendidos.reduce((s,a)=>s+(a.ganancia_real||0),0);
     const diasProm = vendidos.filter(a=>a.dias_total).reduce((s,a,_,arr)=>s+a.dias_total/arr.length,0);
+    const movsDb = await fetchMovimientos();
+    const pagoPrestamoTotal = movsDb.filter(m=>m.tipo==='pago_prestamo').reduce((s,m)=>s+m.monto,0);
+    const prestamoActivo = Math.max(0, 200000 - pagoPrestamoTotal);
 
     document.getElementById('db-stats').innerHTML = `
       <div class="stat-card dark">
@@ -1612,7 +1615,7 @@ async function loadDashboard() {
       <div class="stat-card">
         <div class="stat-ic" style="background:var(--red-bg)"><i class="ti ti-coin" style="color:var(--red)"></i></div>
         <div class="stat-label">Préstamo activo</div>
-        <div class="stat-val text-red">$200,000</div>
+        <div class="stat-val text-red">${fmt(prestamoActivo)}</div>
         <div class="stat-sub">fondo rotativo</div>
       </div>`;
 
@@ -1624,27 +1627,33 @@ async function loadDashboard() {
       ? `<div class="autos-list">${vendidos.slice(0,3).map(autoCardHtml).join('')}</div>`
       : '';
 
-    // Capital
+    // Capital — mismo cálculo que Caja: Invertido + Ganancia disponible (ya descontado lo retirado)
     const jInv = autos.reduce((s,a)=>s+(a.aporte_joseph||0),0);
     const eInv = autos.reduce((s,a)=>s+(a.aporte_emmanuel||0),0);
+    let jGan=0,eGan=0,jRet=0,eRet=0;
+    movsDb.forEach(m=>{
+      if(m.tipo==='liquidacion'){jGan+=(m.ganancia_joseph||0);eGan+=(m.ganancia_emmanuel||0);}
+      if(m.tipo==='retiro_joseph'){jRet+=m.monto;}
+      if(m.tipo==='retiro_emmanuel'){eRet+=m.monto;}
+    });
+    const jDisp=jInv+jGan-jRet, eDisp=eInv+eGan-eRet;
     document.getElementById('db-capital').innerHTML = `
       <div class="cap-card j">
         <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Joseph</div>
         <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(jInv)}</span></div>
-        <div class="cap-total"><span style="font-size:10px;color:var(--text3)">En negocio</span><span class="cap-total-val">${fmt(jInv)}</span></div>
+        <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Disponible para retirar</span><span class="cap-total-val">${fmt(jDisp)}</span></div>
       </div>
       <div class="cap-card e">
         <div class="cap-name"><i class="ti ti-user" style="font-size:11px"></i> Emmanuel</div>
         <div class="cap-row2"><span class="cap-lbl">Invertido</span><span class="cap-val">${fmt(eInv)}</span></div>
-        <div class="cap-total"><span style="font-size:10px;color:var(--text3)">En negocio</span><span class="cap-total-val">${fmt(eInv)}</span></div>
+        <div class="cap-total"><span style="font-size:10px;color:var(--text3)">Disponible para retirar</span><span class="cap-total-val">${fmt(eDisp)}</span></div>
       </div>`;
   } catch(e){console.error(e);}
 
   // Slots
   try {
     const slots = await fetchSlots();
-    const prestamoTotal = slots.reduce((s,sl)=>s+(sl.monto||0),0);
-    document.getElementById('db-prestamo-total').textContent = fmt(prestamoTotal);
+    document.getElementById('db-prestamo-total').textContent = fmt(prestamoActivo);
     document.getElementById('db-slots').innerHTML = slots.map(s=>`
       <div class="pc-slot ${s.libre?'libre':'ocupado'}">
         <div class="pc-slot-label">Slot ${s.numero_slot}</div>
@@ -2845,7 +2854,8 @@ async function loadCaja(){
     renderCaja();
 
     const slots=await fetchSlots();
-    cajaState.prestamo = slots.reduce((s,sl)=>s+(sl.monto||0),0);
+    const pagoPrestamoTotal = movs.filter(m=>m.tipo==='pago_prestamo').reduce((s,m)=>s+m.monto,0);
+    cajaState.prestamo = Math.max(0, 200000 - pagoPrestamoTotal);
     document.getElementById('caja-prestamo-total').textContent = fmt(cajaState.prestamo);
     document.getElementById('caja-slots').innerHTML=slots.map(s=>`
       <div class="pc-slot ${s.libre?'libre':'ocupado'}">
@@ -2952,7 +2962,7 @@ window.retCalc = function(){
   const m=parseFloat(document.getElementById('ret-monto').value)||0;
   const prev=document.getElementById('ret-preview');
   if(!m){prev.classList.add('hidden');return;}
-  const disp=retQ==='j'?(cajaState.jInv+cajaState.jGan):(cajaState.eInv+cajaState.eGan);
+  const disp=retQ==='j'?(cajaState.jInv+cajaState.jGan-cajaState.jRet):(cajaState.eInv+cajaState.eGan-cajaState.eRet);
   const over=m>disp;
   document.getElementById('rp-disp').textContent=fmt(disp);
   document.getElementById('rp-ret').textContent='-'+fmt(m);
@@ -2964,7 +2974,7 @@ window.retCalc = function(){
 window.retEjecutar = async function(){
   const m=parseFloat(document.getElementById('ret-monto').value)||0;
   const nota=document.getElementById('ret-nota').value;
-  const disp=retQ==='j'?(cajaState.jInv+cajaState.jGan):(cajaState.eInv+cajaState.eGan);
+  const disp=retQ==='j'?(cajaState.jInv+cajaState.jGan-cajaState.jRet):(cajaState.eInv+cajaState.eGan-cajaState.eRet);
   if(!m||m>disp){return;}
   try{
     await sb.from('movimientos_caja').insert({tipo:retQ==='j'?'retiro_joseph':'retiro_emmanuel',monto:m,notas:nota,registrado_por:sesion.user.id});
@@ -2977,9 +2987,10 @@ window.pagoCalc = function(){
   const m=parseFloat(document.getElementById('pago-monto').value)||0;
   const prev=document.getElementById('pago-preview');
   if(!m){prev.classList.add('hidden');return;}
-  document.getElementById('pp-act').textContent=fmt(cajaState.prestamo||200000);
+  const prestAct=cajaState.prestamo??200000;
+  document.getElementById('pp-act').textContent=fmt(prestAct);
   document.getElementById('pp-pag').textContent='-'+fmt(m);
-  document.getElementById('pp-rest').textContent=fmt(Math.max(0,(cajaState.prestamo||200000)-m));
+  document.getElementById('pp-rest').textContent=fmt(Math.max(0,prestAct-m));
   prev.classList.remove('hidden');
 };
 window.pagoEjecutar = async function(){
@@ -3043,12 +3054,11 @@ window.simCalc = function(){
   else{ganEl.textContent=(gan>=0?'+':'')+fmt(gan);ganEl.className='sim-gan '+(gan>0?'pos':gan<0?'neg':'zero');}
   const rend=costo>0?((gan/costo)*100).toFixed(1)+'%':'—';
   document.getElementById('sim-rend').textContent=pv?rend:'—';
-  const ganCada=gan>0?gan/2:0;
   const a=simAuto;
   let ganJ=0,ganE=0;
-  if(a.dist_ganancia==='50_50'){ganJ=ganE=ganCada;}
-  else if(a.dist_ganancia==='100_joseph'){ganJ=gan>0?gan:0;}
-  else if(a.dist_ganancia==='100_emmanuel'){ganE=gan>0?gan:0;}
+  if(a.dist_ganancia==='50_50'){ganJ=ganE=gan/2;}
+  else if(a.dist_ganancia==='100_joseph'){ganJ=gan;}
+  else if(a.dist_ganancia==='100_emmanuel'){ganE=gan;}
   document.getElementById('sim-j').textContent=pv?fmt((a.aporte_joseph||0)+ganJ):'—';
   document.getElementById('sim-e').textContent=pv?fmt((a.aporte_emmanuel||0)+ganE):'—';
   const el=document.getElementById('sim-total-val');
@@ -3062,11 +3072,10 @@ window.simCompartir = function(){
   const costo=(simAuto.costo_total||0)+simGastosSim.reduce((s,g)=>s+g.monto,0);
   const gan=pv-costo;
   const a=simAuto;
-  const ganCada=gan>0?gan/2:0;
   let ganJ=0,ganE=0;
-  if(a.dist_ganancia==='50_50'){ganJ=ganE=ganCada;}
-  else if(a.dist_ganancia==='100_joseph'){ganJ=gan>0?gan:0;}
-  else{ganE=gan>0?gan:0;}
+  if(a.dist_ganancia==='50_50'){ganJ=ganE=gan/2;}
+  else if(a.dist_ganancia==='100_joseph'){ganJ=gan;}
+  else{ganE=gan;}
   const extras=simGastosSim.length?'\n🔧 Gastos simulados:\n'+simGastosSim.map(g=>`   • ${g.nombre}: ${fmt(g.monto)}`).join('\n'):'';
   const msg=`🚗 *Simulación ${a.anio} ${a.marca} ${a.modelo}*\n\n💰 Precio: ${fmt(pv)}\n📦 Costo: ${fmt(costo)}${extras}\n\n${gan>=0?'✅':'⚠️'} Ganancia: ${(gan>=0?'+':'')+fmt(gan)}\n\n👤 Joseph: ${fmt((a.aporte_joseph||0)+ganJ)}\n👤 Emmanuel: ${fmt((a.aporte_emmanuel||0)+ganE)}\n\n_Solo simulación_`;
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
