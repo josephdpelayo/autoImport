@@ -89,6 +89,7 @@
     .pill-venta{background:var(--orange-bg);color:var(--orange)}
     .pill-proceso{background:var(--blue-bg);color:var(--blue)}
     .pill-sim{background:var(--orange-bg);color:var(--orange)}
+    .pill-interes{background:var(--purple-bg);color:var(--purple)}
 
     /* ── Bottom nav ── */
     .bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--bg2);border-top:0.5px solid var(--border);padding:8px 0 20px;display:flex;z-index:100}
@@ -518,6 +519,12 @@
   </div>
 
   <div class="sec-hd">
+    <h3>Prospectos Manheim <span id="db-prospectos-badge"></span></h3>
+    <button class="sec-link" onclick="goScreen('prospectos')">Ver todos</button>
+  </div>
+  <div id="db-prospectos"><div class="loading"><div class="spinner"></div></div></div>
+
+  <div class="sec-hd" style="margin-top:16px">
     <h3>Autos activos</h3>
     <button class="sec-link" onclick="goScreen('autos')">Ver todos</button>
   </div>
@@ -562,6 +569,25 @@
     <button class="filtro-btn" onclick="filtrarAutos('vendido',this)">Vendidos</button>
   </div>
   <div id="autos-list-full"><div class="loading"><div class="spinner"></div></div></div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ============================================================
+     SCREEN: PROSPECTOS MANHEIM
+     ============================================================ -->
+<div class="screen" id="screen-prospectos">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
+    <div class="topbar-title">Prospectos Manheim</div>
+  </div>
+  <div class="filtros">
+    <button class="filtro-btn active" onclick="filtrarProspectos('todos',this)">Todos</button>
+    <button class="filtro-btn" onclick="filtrarProspectos('nuevo',this)">Nuevo</button>
+    <button class="filtro-btn" onclick="filtrarProspectos('interesado',this)">Interesado</button>
+    <button class="filtro-btn" onclick="filtrarProspectos('pujado',this)">Pujado</button>
+    <button class="filtro-btn" onclick="filtrarProspectos('descartado',this)">Descartado</button>
+  </div>
+  <div id="prospectos-list-full"><div class="loading"><div class="spinner"></div></div></div>
   <div style="height:20px"></div>
 </div>
 
@@ -1315,6 +1341,48 @@
   </div>
 </div>
 
+<!-- Detalle de prospecto Manheim -->
+<div class="sheet-overlay" id="prospecto-sheet" onclick="closeSheet('prospecto-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="ps-titulo">—</div>
+    <div style="display:flex;align-items:center;gap:8px;margin:-6px 0 12px">
+      <div style="font-size:12px;color:var(--text3);font-family:monospace" id="ps-vin">—</div>
+      <button onclick="copiarVinProspecto()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:11px;font-family:var(--font);padding:0">Copiar VIN</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="field"><label>Millas</label><div style="font-size:14px;font-weight:500" id="ps-millas">—</div></div>
+      <div class="field"><label>Grado</label><div style="font-size:14px;font-weight:500" id="ps-grado">—</div></div>
+      <div class="field"><label>MMR ajustado</label><div style="font-size:14px;font-weight:500" id="ps-mmr">—</div></div>
+      <div class="field"><label>Precio</label><div style="font-size:14px;font-weight:500" id="ps-precio">—</div></div>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Ubicación / subasta</label>
+      <div style="font-size:13px" id="ps-ubicacion">—</div>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Vendedor</label>
+      <div style="font-size:13px" id="ps-vendedor">—</div>
+    </div>
+    <div id="ps-notas-bot-wrap" style="margin-bottom:12px"></div>
+
+    <div class="field" style="margin-bottom:12px">
+      <label>Nota tuya</label>
+      <textarea id="ps-nota-usuario" rows="2" placeholder="Notas de seguimiento..." style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:12px;font-size:13px;background:var(--bg2);color:var(--text1);outline:none;font-family:var(--font);resize:vertical"></textarea>
+      <button class="btn btn-secondary btn-full" style="margin-top:6px" onclick="guardarNotaProspecto()">Guardar nota</button>
+    </div>
+
+    <div class="field" style="margin-bottom:12px">
+      <label>Estado</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="ps-estado-btns"></div>
+    </div>
+
+    <a id="ps-link" href="#" target="_blank" class="btn btn-primary btn-full"><i class="ti ti-external-link"></i>Abrir en Manheim</a>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
 <!-- Editar datos del auto -->
 <div class="sheet-overlay" id="editar-auto-sheet" onclick="closeSheet('editar-auto-sheet',event)">
   <div class="sheet">
@@ -1382,6 +1450,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ── State ─────────────────────────────────────────────────────
 let sesion = null, socio = null;
 let todosAutos = [], autoActual = null;
+let todosProspectos = [], prospectoActual = null, filtroProspectoActual = 'todos';
 let prevScreen = 'dashboard';
 
 // ── Caja state (en memoria, sincronizado con movimientos_caja) ─
@@ -1448,6 +1517,7 @@ window.goScreen = function(id) {
   // Load data on switch
   if(id==='dashboard') loadDashboard();
   if(id==='autos') loadAutos();
+  if(id==='prospectos') loadProspectos();
   if(id==='caja') loadCaja();
   if(id==='stats') loadStats();
   if(id==='gasto') initGasto();
@@ -1583,6 +1653,8 @@ async function loadDashboard() {
   document.getElementById('db-fecha').textContent = now.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
   document.getElementById('db-nombre').textContent = `Hola, ${socio?.nombre || ''}`;
 
+  loadDashboardProspectos();
+
   try {
     const autos = await fetchAutos();
     const activos = autos.filter(a=>a.status!=='vendido');
@@ -1669,6 +1741,12 @@ async function fetchAutos() {
   todosAutos = data||[];
   return todosAutos;
 }
+async function fetchProspectos() {
+  const {data,error} = await sb.from('manheim_prospectos').select('*').order('first_seen',{ascending:false});
+  if(error) throw error;
+  todosProspectos = data||[];
+  return todosProspectos;
+}
 async function fetchSlots() {
   const {data,error} = await sb.from('prestamo_slots').select('*,autos(marca,modelo,anio)').order('numero_slot');
   if(error) throw error;
@@ -1741,6 +1819,112 @@ window.filtrarAutos = function(f,btn) {
   document.querySelectorAll('.filtro-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderAutosList(todosAutos);
+};
+
+// ── Prospectos Manheim ──────────────────────────────────────────
+function pillProspecto(estado) {
+  const map = {
+    nuevo:['pill-proceso','Nuevo','ti-sparkles'],
+    interesado:['pill-interes','Interesado','ti-star'],
+    pujado:['pill-venta','Pujado','ti-gavel'],
+    descartado:['pill-taller','Descartado','ti-x'],
+  };
+  const [cls,lbl,ic] = map[estado]||map.nuevo;
+  return `<span class="pill ${cls}"><i class="ti ${ic}"></i>${lbl}</span>`;
+}
+function prospectoCardHtml(p) {
+  const meta = [p.vin, p.millas?`${p.millas.toLocaleString('es-MX')}mi`:null, p.grado?`grado ${p.grado}`:null].filter(Boolean).join(' · ');
+  return `<div class="auto-card" onclick="openProspecto('${p.vin}')">
+    <div class="auto-thumb" style="background:var(--blue-bg)"><i class="ti ti-car" style="color:var(--blue);font-size:22px"></i></div>
+    <div class="auto-info">
+      <div class="auto-name">${p.titulo}</div>
+      <div class="auto-meta">${meta}</div>
+      <div style="margin-top:4px">${pillProspecto(p.estado)}</div>
+    </div>
+    <div class="auto-right">
+      <div class="auto-gain text-muted">${p.precio||''}</div>
+      <div class="auto-dias">${p.ubicacion||''}</div>
+    </div>
+  </div>`;
+}
+async function loadProspectos() {
+  document.getElementById('prospectos-list-full').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  const prospectos = await fetchProspectos();
+  renderProspectosList(prospectos);
+}
+function renderProspectosList(prospectos) {
+  const filtered = filtroProspectoActual==='todos' ? prospectos : prospectos.filter(p=>p.estado===filtroProspectoActual);
+  document.getElementById('prospectos-list-full').innerHTML = filtered.length
+    ? `<div class="autos-list">${filtered.map(prospectoCardHtml).join('')}</div><div style="height:20px"></div>`
+    : '<div class="empty"><i class="ti ti-car-off"></i><p>Sin prospectos en esta categoría</p></div>';
+}
+window.filtrarProspectos = function(f,btn) {
+  filtroProspectoActual=f;
+  btn.parentElement.querySelectorAll('.filtro-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProspectosList(todosProspectos);
+};
+async function loadDashboardProspectos() {
+  try {
+    const prospectos = await fetchProspectos();
+    const activos = prospectos.filter(p=>p.estado!=='descartado');
+    document.getElementById('db-prospectos-badge').textContent = activos.length ? `(${activos.length})` : '';
+    document.getElementById('db-prospectos').innerHTML = activos.length
+      ? `<div class="autos-list">${activos.slice(0,3).map(prospectoCardHtml).join('')}</div>`
+      : '<div class="empty"><i class="ti ti-car-off"></i><p>Sin prospectos por ahora</p></div>';
+  } catch(e) { console.warn('loadDashboardProspectos:', e); }
+}
+window.openProspecto = function(vin) {
+  const p = todosProspectos.find(x=>x.vin===vin);
+  if(!p) return;
+  prospectoActual = p;
+  document.getElementById('ps-titulo').textContent = p.titulo;
+  document.getElementById('ps-vin').textContent = p.vin;
+  document.getElementById('ps-millas').textContent = p.millas ? `${p.millas.toLocaleString('es-MX')} mi` : '—';
+  document.getElementById('ps-grado').textContent = p.grado ?? '—';
+  document.getElementById('ps-mmr').textContent = p.mmr ? fmt(p.mmr) : '—';
+  document.getElementById('ps-precio').textContent = p.precio || '—';
+  document.getElementById('ps-ubicacion').textContent = [p.ubicacion,p.subasta].filter(Boolean).join(' · ') || '—';
+  document.getElementById('ps-vendedor').textContent = [p.vendedor, p.duenos?`${p.duenos} dueños`:null, p.accidentes?`${p.accidentes} accidente(s)`:null].filter(Boolean).join(' · ') || '—';
+  const notas = Array.isArray(p.notas_bot) ? p.notas_bot : [];
+  document.getElementById('ps-notas-bot-wrap').innerHTML = notas.length
+    ? `<div class="field"><label>Notas del bot</label>${notas.map(n=>`<div style="font-size:12px;color:var(--text2);margin-top:4px">ℹ️ ${n}</div>`).join('')}</div>`
+    : '';
+  document.getElementById('ps-nota-usuario').value = p.notas_usuario || '';
+  document.getElementById('ps-link').href = p.link || '#';
+  const estados = [['nuevo','Nuevo'],['interesado','Interesado'],['pujado','Pujado'],['descartado','Descartado']];
+  document.getElementById('ps-estado-btns').innerHTML = estados.map(([val,label]) => {
+    const active = val===p.estado;
+    return `<button class="btn ${active?'btn-primary':'btn-secondary'}" style="font-size:12px;padding:8px" onclick="setEstadoProspecto('${val}')">${label}</button>`;
+  }).join('');
+  openSheet('prospecto-sheet');
+};
+window.setEstadoProspecto = async function(estado) {
+  if(!prospectoActual) return;
+  const {error} = await sb.from('manheim_prospectos').update({estado}).eq('vin',prospectoActual.vin);
+  if(error) return showToast('Error al actualizar estado');
+  prospectoActual.estado = estado;
+  const idx = todosProspectos.findIndex(p=>p.vin===prospectoActual.vin);
+  if(idx>=0) todosProspectos[idx].estado = estado;
+  showToast('Estado actualizado');
+  openProspecto(prospectoActual.vin);
+  renderProspectosList(todosProspectos);
+  loadDashboardProspectos();
+};
+window.guardarNotaProspecto = async function() {
+  if(!prospectoActual) return;
+  const nota = document.getElementById('ps-nota-usuario').value;
+  const {error} = await sb.from('manheim_prospectos').update({notas_usuario:nota}).eq('vin',prospectoActual.vin);
+  if(error) return showToast('Error al guardar nota');
+  prospectoActual.notas_usuario = nota;
+  const idx = todosProspectos.findIndex(p=>p.vin===prospectoActual.vin);
+  if(idx>=0) todosProspectos[idx].notas_usuario = nota;
+  showToast('Nota guardada');
+};
+window.copiarVinProspecto = function() {
+  if(!prospectoActual) return;
+  navigator.clipboard?.writeText(prospectoActual.vin);
+  showToast('VIN copiado');
 };
 
 // ── Detalle auto ───────────────────────────────────────────────
