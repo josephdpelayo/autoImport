@@ -579,6 +579,9 @@
   <div class="topbar">
     <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
     <div class="topbar-title">Prospectos Manheim</div>
+    <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;margin-left:auto" onclick="openAnalizarSheet()">
+      <i class="ti ti-sparkles"></i>Analizar auto
+    </button>
   </div>
   <div class="filtros">
     <button class="filtro-btn active" onclick="filtrarProspectos('todos',this)">Todos</button>
@@ -1368,6 +1371,12 @@
     <div id="ps-notas-bot-wrap" style="margin-bottom:12px"></div>
 
     <div class="field" style="margin-bottom:12px">
+      <label>Análisis con IA</label>
+      <div id="ps-analisis-ia" style="font-size:13px;color:var(--text2);line-height:1.5"></div>
+      <button class="btn btn-secondary btn-full" style="margin-top:6px" id="ps-analizar-btn" onclick="analizarProspectoActual()">Analizar con IA</button>
+    </div>
+
+    <div class="field" style="margin-bottom:12px">
       <label>Nota tuya</label>
       <textarea id="ps-nota-usuario" rows="2" placeholder="Notas de seguimiento..." style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:12px;font-size:13px;background:var(--bg2);color:var(--text1);outline:none;font-family:var(--font);resize:vertical"></textarea>
       <button class="btn btn-secondary btn-full" style="margin-top:6px" onclick="guardarNotaProspecto()">Guardar nota</button>
@@ -1379,6 +1388,29 @@
     </div>
 
     <a id="ps-link" href="#" target="_blank" class="btn btn-primary btn-full"><i class="ti ti-external-link"></i>Abrir en Manheim</a>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- Analizar un auto (VIN suelto, texto/link, PDF o foto) -->
+<div class="sheet-overlay" id="analizar-sheet" onclick="closeSheet('analizar-sheet',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Analizar auto con IA</div>
+    <div class="field" style="margin-bottom:10px">
+      <label>VIN (opcional)</label>
+      <input type="text" id="an-vin" placeholder="Si ya está en tu lista, usa sus datos" style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:12px;font-size:13px;background:var(--bg2);color:var(--text1);outline:none;font-family:var(--font)">
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Texto o link pegado</label>
+      <textarea id="an-texto" rows="3" placeholder="Pega el link de Manheim o el texto del listing..." style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:12px;font-size:13px;background:var(--bg2);color:var(--text1);outline:none;font-family:var(--font);resize:vertical"></textarea>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>PDF o foto (Condition Report, listing)</label>
+      <input type="file" id="an-archivo" accept="application/pdf,image/*" style="width:100%;font-size:13px;color:var(--text2)">
+    </div>
+    <button class="btn btn-primary btn-full" id="an-btn" onclick="enviarAnalisisAdHoc()">Analizar</button>
+    <div id="an-resultado" style="margin-top:12px;font-size:13px;color:var(--text2);line-height:1.5"></div>
     <div style="height:8px"></div>
   </div>
 </div>
@@ -1549,6 +1581,7 @@ window.doLogout = async () => { await sb.auth.signOut(); window.location.href='/
 // ── Push Notifications ────────────────────────────────────────
 const VAPID_PUBLIC_KEY = 'BImwXpzuEn9MRZuP1C-f2nU2lgK7QG_T28EP920LJWUd0_MsQb4G7mF63ekIvX49zltfNdKZIKw5AqMS-rtIVK8';
 const PUSH_EDGE_URL = 'https://vxwmheehqqzybucaunkj.supabase.co/functions/v1/send-push';
+const ANALIZAR_EDGE_URL = 'https://vxwmheehqqzybucaunkj.supabase.co/functions/v1/analizar-auto';
 
 function _b64ToUint8(b64) {
   const pad = '='.repeat((4 - b64.length % 4) % 4);
@@ -1616,6 +1649,37 @@ window.cerrarBannerNotif = function() {
   const el = document.getElementById('notif-banner');
   if (el) el.style.display = 'none';
 };
+
+window.analizarAuto = async function(payload) {
+  const res = await fetch(ANALIZAR_EDGE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${sesion?.access_token}`,
+      'apikey': SUPABASE_KEY,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error || 'Error al analizar');
+  return data.analisis;
+};
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function analisisHtml(texto) {
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc(texto)
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/\n/g, '<br>');
+}
 
 window.notif = async function(titulo, cuerpo, datos = {}) {
   try {
@@ -1892,6 +1956,8 @@ window.openProspecto = function(vin) {
     : '';
   document.getElementById('ps-nota-usuario').value = p.notas_usuario || '';
   document.getElementById('ps-link').href = p.link || '#';
+  document.getElementById('ps-analisis-ia').innerHTML = p.analisis_ia ? analisisHtml(p.analisis_ia) : '<span style="color:var(--text3)">Sin analizar todavía.</span>';
+  document.getElementById('ps-analizar-btn').textContent = p.analisis_ia ? 'Volver a analizar' : 'Analizar con IA';
   const estados = [['nuevo','Nuevo'],['interesado','Interesado'],['pujado','Pujado'],['descartado','Descartado']];
   document.getElementById('ps-estado-btns').innerHTML = estados.map(([val,label]) => {
     const active = val===p.estado;
@@ -1925,6 +1991,70 @@ window.copiarVinProspecto = function() {
   if(!prospectoActual) return;
   navigator.clipboard?.writeText(prospectoActual.vin);
   showToast('VIN copiado');
+};
+window.analizarProspectoActual = async function() {
+  if(!prospectoActual) return;
+  const btn = document.getElementById('ps-analizar-btn');
+  const prevText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Analizando...';
+  document.getElementById('ps-analisis-ia').innerHTML = '<span style="color:var(--text3)">Analizando con IA, unos segundos...</span>';
+  try {
+    const analisis = await analizarAuto({ vin: prospectoActual.vin });
+    prospectoActual.analisis_ia = analisis;
+    const idx = todosProspectos.findIndex(p=>p.vin===prospectoActual.vin);
+    if(idx>=0) todosProspectos[idx].analisis_ia = analisis;
+    document.getElementById('ps-analisis-ia').innerHTML = analisisHtml(analisis);
+    btn.textContent = 'Volver a analizar';
+  } catch(e) {
+    document.getElementById('ps-analisis-ia').innerHTML = '<span style="color:var(--red)">Error al analizar. Intenta de nuevo.</span>';
+    btn.textContent = prevText;
+    showToast('Error al analizar');
+  } finally {
+    btn.disabled = false;
+  }
+};
+window.openAnalizarSheet = function() {
+  document.getElementById('an-vin').value = '';
+  document.getElementById('an-texto').value = '';
+  document.getElementById('an-archivo').value = '';
+  document.getElementById('an-resultado').innerHTML = '';
+  openSheet('analizar-sheet');
+};
+window.enviarAnalisisAdHoc = async function() {
+  const vin = document.getElementById('an-vin').value.trim();
+  const texto = document.getElementById('an-texto').value.trim();
+  const archivo = document.getElementById('an-archivo').files[0];
+
+  if (!vin && !texto && !archivo) {
+    showToast('Agrega un VIN, texto/link, o un archivo');
+    return;
+  }
+
+  const btn = document.getElementById('an-btn');
+  btn.disabled = true;
+  btn.textContent = 'Analizando...';
+  document.getElementById('an-resultado').innerHTML = '<span style="color:var(--text3)">Analizando con IA, unos segundos...</span>';
+
+  try {
+    const payload = {};
+    if (vin) payload.vin = vin;
+    if (texto) payload.texto = texto;
+    if (archivo) {
+      const dataUrl = await fileToBase64(archivo);
+      if (archivo.type === 'application/pdf') payload.pdfBase64 = dataUrl;
+      else payload.imagenBase64 = dataUrl;
+    }
+    const analisis = await analizarAuto(payload);
+    document.getElementById('an-resultado').innerHTML = analisisHtml(analisis);
+    if (vin) loadProspectos(); // por si el VIN coincidía con uno ya guardado
+  } catch (e) {
+    document.getElementById('an-resultado').innerHTML = '<span style="color:var(--red)">Error al analizar. Intenta de nuevo.</span>';
+    showToast('Error al analizar');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Analizar';
+  }
 };
 
 // ── Detalle auto ───────────────────────────────────────────────
