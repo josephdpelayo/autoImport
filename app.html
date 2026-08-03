@@ -579,8 +579,8 @@
   <div class="topbar">
     <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
     <div class="topbar-title">Prospectos Manheim</div>
-    <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;margin-left:auto" onclick="openAnalizarSheet()">
-      <i class="ti ti-sparkles"></i>Analizar auto
+    <button class="btn btn-primary" style="padding:8px 14px;font-size:13px;margin-left:auto" onclick="goScreen('mesa-analisis')">
+      <i class="ti ti-sparkles"></i>Mesa de análisis
     </button>
   </div>
   <div class="filtros">
@@ -592,6 +592,31 @@
   </div>
   <div id="prospectos-list-full"><div class="loading"><div class="spinner"></div></div></div>
   <div style="height:20px"></div>
+</div>
+
+<!-- ============================================================
+     SCREEN: MESA DE ANÁLISIS (chat con IA)
+     ============================================================ -->
+<div class="screen" id="screen-mesa-analisis">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
+    <div class="topbar-title">Mesa de análisis</div>
+    <button onclick="nuevaConversacionChat()" style="margin-left:auto;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:var(--font)">Nueva conversación</button>
+  </div>
+  <div id="chat-mensajes" style="padding:4px 20px 12px;display:flex;flex-direction:column;gap:10px"></div>
+
+  <div style="position:sticky;bottom:90px;background:var(--bg);padding:8px 20px;border-top:0.5px solid var(--border)">
+    <input type="text" id="chat-vin" placeholder="VIN (opcional)" style="width:100%;padding:8px 12px;margin-bottom:6px;border:0.5px solid var(--border);border-radius:12px;font-size:12px;background:var(--bg2);color:var(--text1);outline:none;font-family:var(--font)">
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <textarea id="chat-texto" rows="1" placeholder="Escribe, pega texto/link, o pregunta..." style="flex:1;padding:10px 12px;border:0.5px solid var(--border);border-radius:12px;font-size:13px;background:var(--bg2);color:var(--text1);outline:none;font-family:var(--font);resize:none"></textarea>
+      <label style="cursor:pointer;padding:8px" title="Adjuntar PDF o foto">
+        <input type="file" id="chat-archivo" accept="application/pdf,image/*" style="display:none" onchange="mostrarArchivoAdjunto()">
+        <i class="ti ti-paperclip" style="font-size:20px;color:var(--text2)"></i>
+      </label>
+      <button class="btn btn-primary" id="chat-send-btn" onclick="enviarMensajeChat()" style="padding:10px 14px"><i class="ti ti-send"></i></button>
+    </div>
+    <div id="chat-archivo-indicator" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+  </div>
 </div>
 
 <!-- ============================================================
@@ -1392,28 +1417,6 @@
   </div>
 </div>
 
-<!-- Analizar un auto (VIN suelto, texto/link, PDF o foto) -->
-<div class="sheet-overlay" id="analizar-sheet" onclick="closeSheet('analizar-sheet',event)">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title">Analizar auto con IA</div>
-    <div class="field" style="margin-bottom:10px">
-      <label>VIN (opcional)</label>
-      <input type="text" id="an-vin" placeholder="Si ya está en tu lista, usa sus datos" style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:12px;font-size:13px;background:var(--bg2);color:var(--text1);outline:none;font-family:var(--font)">
-    </div>
-    <div class="field" style="margin-bottom:10px">
-      <label>Texto o link pegado</label>
-      <textarea id="an-texto" rows="3" placeholder="Pega el link de Manheim o el texto del listing..." style="width:100%;padding:10px 12px;border:0.5px solid var(--border);border-radius:12px;font-size:13px;background:var(--bg2);color:var(--text1);outline:none;font-family:var(--font);resize:vertical"></textarea>
-    </div>
-    <div class="field" style="margin-bottom:12px">
-      <label>PDF o foto (Condition Report, listing)</label>
-      <input type="file" id="an-archivo" accept="application/pdf,image/*" style="width:100%;font-size:13px;color:var(--text2)">
-    </div>
-    <button class="btn btn-primary btn-full" id="an-btn" onclick="enviarAnalisisAdHoc()">Analizar</button>
-    <div id="an-resultado" style="margin-top:12px;font-size:13px;color:var(--text2);line-height:1.5"></div>
-    <div style="height:8px"></div>
-  </div>
-</div>
 
 <!-- Editar datos del auto -->
 <div class="sheet-overlay" id="editar-auto-sheet" onclick="closeSheet('editar-auto-sheet',event)">
@@ -1550,6 +1553,7 @@ window.goScreen = function(id) {
   if(id==='dashboard') loadDashboard();
   if(id==='autos') loadAutos();
   if(id==='prospectos') loadProspectos();
+  if(id==='mesa-analisis') loadChatThread();
   if(id==='caja') loadCaja();
   if(id==='stats') loadStats();
   if(id==='gasto') initGasto();
@@ -2014,27 +2018,51 @@ window.analizarProspectoActual = async function() {
     btn.disabled = false;
   }
 };
-window.openAnalizarSheet = function() {
-  document.getElementById('an-vin').value = '';
-  document.getElementById('an-texto').value = '';
-  document.getElementById('an-archivo').value = '';
-  document.getElementById('an-resultado').innerHTML = '';
-  openSheet('analizar-sheet');
+function chatBurbujaHtml(msg) {
+  const esUsuario = msg.role === 'user';
+  return `<div style="align-self:${esUsuario?'flex-end':'flex-start'};max-width:85%;background:${esUsuario?'var(--blue)':'var(--bg2)'};color:${esUsuario?'#fff':'var(--text1)'};border-radius:14px;padding:10px 14px;font-size:13px;line-height:1.5;box-shadow:var(--shadow)">${analisisHtml(msg.contenido)}</div>`;
+}
+async function loadChatThread() {
+  document.getElementById('chat-mensajes').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  const { data, error } = await sb.from('manheim_chat').select('role,contenido,created_at').order('created_at', { ascending: true });
+  if (error) { document.getElementById('chat-mensajes').innerHTML = ''; return; }
+  renderChatThread(data || []);
+}
+function renderChatThread(thread) {
+  const el = document.getElementById('chat-mensajes');
+  el.innerHTML = thread.length
+    ? thread.map(chatBurbujaHtml).join('')
+    : '<div class="empty"><i class="ti ti-sparkles"></i><p>Comparte tu primer auto (VIN, texto, foto o PDF) para empezar a analizar.</p></div>';
+  el.scrollIntoView({ block: 'end' });
+}
+window.nuevaConversacionChat = async function() {
+  if (!confirm('¿Borrar esta conversación y empezar una nueva?')) return;
+  await analizarAuto({ reset: true });
+  loadChatThread();
 };
-window.enviarAnalisisAdHoc = async function() {
-  const vin = document.getElementById('an-vin').value.trim();
-  const texto = document.getElementById('an-texto').value.trim();
-  const archivo = document.getElementById('an-archivo').files[0];
+window.mostrarArchivoAdjunto = function() {
+  const archivo = document.getElementById('chat-archivo').files[0];
+  document.getElementById('chat-archivo-indicator').textContent = archivo ? `📎 ${archivo.name}` : '';
+};
+window.enviarMensajeChat = async function() {
+  const vin = document.getElementById('chat-vin').value.trim();
+  const texto = document.getElementById('chat-texto').value.trim();
+  const archivo = document.getElementById('chat-archivo').files[0];
 
   if (!vin && !texto && !archivo) {
-    showToast('Agrega un VIN, texto/link, o un archivo');
+    showToast('Agrega un VIN, texto/pregunta, o un archivo');
     return;
   }
 
-  const btn = document.getElementById('an-btn');
+  const btn = document.getElementById('chat-send-btn');
   btn.disabled = true;
-  btn.textContent = 'Analizando...';
-  document.getElementById('an-resultado').innerHTML = '<span style="color:var(--text3)">Analizando con IA, unos segundos...</span>';
+
+  const el = document.getElementById('chat-mensajes');
+  const huboVacio = el.querySelector('.empty');
+  if (huboVacio) el.innerHTML = '';
+  el.insertAdjacentHTML('beforeend', chatBurbujaHtml({ role: 'user', contenido: [vin?`VIN: ${vin}`:null, texto, archivo?`[${archivo.type==='application/pdf'?'PDF':'Foto'} adjunto]`:null].filter(Boolean).join('\n') }));
+  el.insertAdjacentHTML('beforeend', '<div id="chat-pensando" style="align-self:flex-start;color:var(--text3);font-size:12px">Analizando...</div>');
+  el.scrollIntoView({ block: 'end' });
 
   try {
     const payload = {};
@@ -2045,15 +2073,26 @@ window.enviarAnalisisAdHoc = async function() {
       if (archivo.type === 'application/pdf') payload.pdfBase64 = dataUrl;
       else payload.imagenBase64 = dataUrl;
     }
-    const analisis = await analizarAuto(payload);
-    document.getElementById('an-resultado').innerHTML = analisisHtml(analisis);
-    if (vin) loadProspectos(); // por si el VIN coincidía con uno ya guardado
+    const res = await fetch(ANALIZAR_EDGE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sesion?.access_token}`, 'apikey': SUPABASE_KEY },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Error al analizar');
+
+    document.getElementById('chat-vin').value = '';
+    document.getElementById('chat-texto').value = '';
+    document.getElementById('chat-archivo').value = '';
+    document.getElementById('chat-archivo-indicator').textContent = '';
+    renderChatThread(data.thread || []);
+    if (vin) loadProspectos();
   } catch (e) {
-    document.getElementById('an-resultado').innerHTML = '<span style="color:var(--red)">Error al analizar. Intenta de nuevo.</span>';
+    document.getElementById('chat-pensando')?.remove();
+    el.insertAdjacentHTML('beforeend', '<div style="align-self:flex-start;color:var(--red);font-size:12px">Error al analizar. Intenta de nuevo.</div>');
     showToast('Error al analizar');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Analizar';
   }
 };
 
