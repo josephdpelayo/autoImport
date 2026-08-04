@@ -16,6 +16,7 @@ const { sb } = require('./supabase');
 const PROFILE_DIR = path.join(__dirname, '.chrome-profile');
 const SEEN_PATH = path.join(__dirname, 'seen.json');
 const RESULTS_URL = 'https://search.manheim.com/results';
+const CR_SCREENSHOT_BUCKET = 'condition-reports';
 
 function loadSeen() {
   try {
@@ -27,6 +28,23 @@ function loadSeen() {
 
 function saveSeen(seen) {
   fs.writeFileSync(SEEN_PATH, JSON.stringify(seen, null, 2));
+}
+
+async function extractStockwaveInfo(page) {
+  let raw = [];
+  for (let attempt = 0; attempt < 3 && raw.length === 0; attempt++) {
+    raw = await page.$$eval('[data-test-id="stockwave-info"]', (els) =>
+      els.map((el) => {
+        try {
+          return JSON.parse(el.textContent);
+        } catch {
+          return null;
+        }
+      }).filter(Boolean)
+    );
+    if (raw.length === 0) await page.waitForTimeout(2000);
+  }
+  return raw;
 }
 
 async function collectListingsForSearch(page, chipText) {
@@ -49,20 +67,118 @@ async function collectListingsForSearch(page, chipText) {
   await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(2000);
 
-  let raw = [];
-  for (let attempt = 0; attempt < 3 && raw.length === 0; attempt++) {
-    raw = await page.$$eval('[data-test-id="stockwave-info"]', (els) =>
-      els.map((el) => {
-        try {
-          return JSON.parse(el.textContent);
-        } catch {
-          return null;
-        }
-      }).filter(Boolean)
-    );
-    if (raw.length === 0) await page.waitForTimeout(2000);
-  }
+  const raw = await extractStockwaveInfo(page);
   return raw.map((r) => ({ ...r, _searchLabel: chipText }));
+}
+
+// Candidatos de selector para el buscador global de Manheim — se prueban en orden
+// porque no hay forma de confirmar cuál es sin sesión en vivo. Si ninguno funciona,
+// runOnDemand lo reporta explícitamente para ajustar el selector correcto.
+const SEARCH_INPUT_SELECTORS = [
+  'input[placeholder*="VIN" i]',
+  'input[type="search"]',
+  'input[placeholder*="Search" i]',
+  '[data-test-id*="search" i] input',
+  'input[aria-label*="search" i]',
+];
+
+async function searchByVin(page, vin) {
+  await page.goto(RESULTS_URL, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(2500);
+
+  const loginForm = await page.locator('input[type="password"]').count();
+  if (loginForm > 0) {
+    throw new Error('SESSION_EXPIRED');
+  }
+
+  let usedSelector = null;
+  for (const sel of SEARCH_INPUT_SELECTORS) {
+    const input = page.locator(sel).first();
+    try {
+      await input.waitFor({ state: 'visible', timeout: 4000 });
+      await input.click();
+      await input.fill(vin);
+      await input.press('Enter');
+      usedSelector = sel;
+      break;
+    } catch {
+      // probar el siguiente selector
+    }
+  }
+
+  if (!usedSelector) {
+    console.warn(`No encontré el buscador de Manheim (probé: ${SEARCH_INPUT_SELECTORS.join(', ')}). Dile a Claude qué selector usar (inspecciona el input de búsqueda en search.manheim.com/results) y lo ajustamos.`);
+    return [];
+  }
+
+  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(2000);
+
+  const raw = await extractStockwaveInfo(page);
+  return raw
+    .filter((r) => (r.vin || '').toUpperCase() === vin.toUpperCase())
+    .map((r) => ({ ...r, _searchLabel: 'On-demand' }));
+}
+
+function extractVinFromInput(rawInput) {
+  const match = rawInput.toUpperCase().match(/[A-HJ-NPR-Z0-9]{17}/);
+  return match ? match[0] : null;
+}
+
+async function runOnDemand(rawInput) {
+  const vin = extractVinFromInput(rawInput);
+  if (!vin) {
+    console.error(`No pude extraer un VIN válido (17 caracteres) de: "${rawInput}"`);
+    process.exit(1);
+  }
+
+  console.log(`\n=== Búsqueda on-demand — VIN ${vin} ===\n`);
+
+  const context = await chromium.launchPersistentContext(PROFILE_DIR, {
+    headless: false,
+    viewport: { width: 1400, height: 1000 },
+  });
+  const page = context.pages()[0] || (await context.newPage());
+
+  let listings = [];
+  try {
+    listings = await searchByVin(page, vin);
+  } catch (e) {
+    await context.close();
+    if (e.message === 'SESSION_EXPIRED') {
+      console.error('\nTu sesión de Manheim expiró. Corre: node login.js\n');
+      process.exit(1);
+    }
+    throw e;
+  }
+
+  if (listings.length === 0) {
+    console.log('No encontré este VIN en resultados activos de Manheim (puede que ya no esté en subasta, o que el buscador no lo haya filtrado bien).');
+    await context.close();
+    process.exit(0);
+  }
+
+  const { reasons, notes } = evaluateVinGroup(vin, listings);
+  const candidate = formatCandidate(vin, listings, notes);
+  // On-demand: no se descarta aunque incumpla los filtros — Joseph lo pidió a propósito.
+  // Los "reasons" del bot se muestran como advertencias, no como exclusión.
+  candidate.notes = [...reasons.map((r) => `⚠️ [criterio del bot] ${r}`), ...candidate.notes];
+
+  if (candidate.link.startsWith('https://insightcr.manheim.com')) {
+    const cr = await scrapeConditionReport(page, candidate.link, vin);
+    addConditionReportNotes(candidate, cr);
+    if (cr) candidate.crScreenshotUrl = cr.screenshotUrl;
+  }
+
+  await context.close();
+  await upsertProspectos([candidate]);
+
+  console.log(`${candidate.vin} — ${candidate.titulo}`);
+  console.log(`  ${candidate.millas} mi | grado ${candidate.grado} | MMR $${candidate.mmrAjustado} | ${candidate.precio}`);
+  console.log(`  ${candidate.ubicacion} | ${candidate.subasta}`);
+  for (const note of candidate.notes) console.log(`  ${note}`);
+  console.log(`  ${candidate.link}`);
+  console.log('\nGuardado en Prospectos — ya lo puedes ver en la Mesa de análisis de la app.\n');
 }
 
 function importableVin(vin) {
@@ -202,6 +318,7 @@ function formatCandidate(vin, listings, notes) {
   const l = bestListing(listings);
   const ce = l.conditionEnrichment || {};
   const price = l.buyNowPrice ? `Buy Now $${l.buyNowPrice}` : (l.startingBidPrice ? `Starting Bid $${l.startingBidPrice}` : 'N/A');
+  const danos = (ce.damages || []).map((d) => [d.item, d.category, d.damage].filter(Boolean).join(' - ')).filter(Boolean);
   return {
     vin,
     titulo: titleFor(l),
@@ -219,14 +336,37 @@ function formatCandidate(vin, listings, notes) {
     link: detailUrl(l),
     busqueda: l._searchLabel,
     notes: notes || [],
+    // Datos que el bot ya revisa para filtrar pero antes no se guardaban —
+    // sin esto la IA no podía dar veredicto real, solo pedir "verifica el CR".
+    tituloEstado: l.titleStatus || null,
+    luzAzul: !!l.blueLight,
+    danoEstructural: !!l.hasFrameDamage,
+    salvage: !!l.salvageVehicle,
+    canalTra: !!l.isTra,
+    drivable: l.isDrivable !== false,
+    motorEnciende: ce.engineStarts !== false,
+    danos,
   };
 }
 
-async function scrapeConditionReport(page, url) {
+async function scrapeConditionReport(page, url, vin) {
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
     await page.waitForTimeout(2000);
-    return await page.evaluate(() => {
+
+    // Mejor esfuerzo: expandir cualquier acordeón/sección colapsada (daños,
+    // opciones, comentarios) para que la captura traiga todo el contenido, no
+    // solo lo que se ve sin interactuar. No falla el scrape si no encuentra nada.
+    await page.evaluate(() => {
+      const candidates = Array.from(document.querySelectorAll('button, a, [role="button"]'))
+        .filter((el) => /expand all|ver todo|show all|view all/i.test(el.textContent || ''));
+      for (const el of candidates) {
+        try { el.click(); } catch { /* ignorar */ }
+      }
+    }).catch(() => {});
+    await page.waitForTimeout(1000);
+
+    const keysFobs = await page.evaluate(() => {
       const keysFobsLinks = Array.from(document.querySelectorAll('a[href="#details_keys"]'));
       const keysFobsNums = keysFobsLinks.map((a) => {
         const spans = a.querySelectorAll('span');
@@ -237,6 +377,30 @@ async function scrapeConditionReport(page, url) {
         fobs: keysFobsNums[1] ?? null,
       };
     });
+
+    // Captura completa de la página real del Condition Report — es lo que la IA
+    // va a "leer" directamente (daños, fotos, comentarios), no solo los campos
+    // sueltos que el bot ya extrae por su cuenta.
+    let screenshotUrl = null;
+    if (vin) {
+      try {
+        const buffer = await page.screenshot({ fullPage: true, type: 'png' });
+        const storagePath = `${vin}.png`;
+        const { error } = await sb.storage
+          .from(CR_SCREENSHOT_BUCKET)
+          .upload(storagePath, buffer, { contentType: 'image/png', upsert: true });
+        if (error) {
+          console.warn(`No se pudo subir la captura del CR (${vin}): ${error.message}`);
+        } else {
+          const { data } = sb.storage.from(CR_SCREENSHOT_BUCKET).getPublicUrl(storagePath);
+          screenshotUrl = data?.publicUrl ?? null;
+        }
+      } catch (e) {
+        console.warn(`No se pudo capturar el CR (${vin}): ${e.message}`);
+      }
+    }
+
+    return { ...keysFobs, screenshotUrl };
   } catch {
     return null;
   }
@@ -273,6 +437,15 @@ async function upsertProspectos(survivors) {
     vendedor: s.vendedor,
     notas_bot: s.notes,
     link: s.link,
+    titulo_estado: s.tituloEstado ?? null,
+    luz_azul: s.luzAzul ?? null,
+    dano_estructural: s.danoEstructural ?? null,
+    salvage: s.salvage ?? null,
+    canal_tra: s.canalTra ?? null,
+    drivable: s.drivable ?? null,
+    motor_enciende: s.motorEnciende ?? null,
+    danos: s.danos ?? [],
+    cr_screenshot_url: s.crScreenshotUrl ?? null,
   }));
   const { error } = await sb.from('manheim_prospectos').upsert(rows, { onConflict: 'vin' });
   if (error) console.error('No se pudo escribir en Supabase:', error.message);
@@ -319,8 +492,9 @@ async function run() {
 
   for (const s of survivors) {
     if (s.link.startsWith('https://insightcr.manheim.com')) {
-      const cr = await scrapeConditionReport(page, s.link);
+      const cr = await scrapeConditionReport(page, s.link, s.vin);
       addConditionReportNotes(s, cr);
+      if (cr) s.crScreenshotUrl = cr.screenshotUrl;
     }
   }
   await context.close();
@@ -370,4 +544,9 @@ async function run() {
   }
 }
 
-run();
+const onDemandArg = process.argv.slice(2).find((a) => a.startsWith('--vin=') || a.startsWith('--url='));
+if (onDemandArg) {
+  runOnDemand(onDemandArg.split('=').slice(1).join('='));
+} else {
+  run();
+}

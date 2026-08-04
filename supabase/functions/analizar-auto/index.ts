@@ -33,6 +33,10 @@ Explícitamente NO son señal de riesgo para este negocio (ignóralas en el vere
 
 Rango objetivo de compra (salvo que el usuario diga lo contrario): odómetro ≤125,000 mi, grado de condición 1.0–3.0, MMR ajustado $1,500–$4,000 USD.
 
+Cuando el prospecto traiga "Datos ya recopilados por nuestro bot" en JSON, los campos titulo_estado, luz_azul, dano_estructural, salvage, canal_tra, drivable, motor_enciende y danos ya vienen del Condition Report real de Manheim — úsalos directo para aplicar las reglas de descarte de arriba (ej. luz_azul: true = descarte automático, dano_estructural: true = descarte automático) en vez de pedirle a Joseph que los verifique manualmente. Solo pide verificación manual si esos campos vienen null/vacíos (dato no recopilado, no lo mismo que "está bien").
+
+Si además llega una captura del Condition Report completo (imagen), es la página real de Manheim — tienes acceso a todo lo que un humano vería ahí. No te limites a repetir el checklist de reglas: léela de verdad, mira las fotos de daño, el diagrama, los comentarios del inspector, las opciones del auto, y da tu propio criterio. El valor que aportas es notar cosas que Joseph no alcanzaría a ver revisando rápido desde el celular — un daño que no cuadra con el grado reportado, un comentario que contradice el título, una combinación de señales que individualmente no descartarían pero juntas sí. Dilo explícitamente si algo te llama la atención más allá de las reglas fijas.
+
 Cuando compartan un auto nuevo (VIN/texto/foto/PDF), da tu análisis en este formato:
 
 **Veredicto:** Comprar / Evaluar más de cerca / Descartar
@@ -95,6 +99,27 @@ Deno.serve(async (req) => {
         text: `Datos ya recopilados por nuestro bot para este auto:\n${JSON.stringify(prospecto, null, 2)}`,
       });
       resumenPartes.push(`VIN: ${prospecto.vin} (${prospecto.titulo})`);
+
+      if (prospecto.cr_screenshot_url) {
+        try {
+          const imgResp = await fetch(prospecto.cr_screenshot_url);
+          if (imgResp.ok) {
+            const buf = new Uint8Array(await imgResp.arrayBuffer());
+            let binary = "";
+            for (let i = 0; i < buf.length; i++) binary += String.fromCharCode(buf[i]);
+            content.push({
+              type: "text",
+              text: "Captura completa de la página real del Condition Report en Manheim para este auto (tomada por el bot con sesión logueada). Léela tú mismo con tu propio criterio — no te limites al checklist de reglas ni a los campos estructurados de arriba: señala cualquier cosa relevante que veas en la imagen (fotos de daño, comentarios del inspector, opciones, estado del título, lo que sea) aunque no esté cubierto por las reglas de descarte.",
+            });
+            content.push({
+              type: "image",
+              source: { type: "base64", media_type: "image/png", data: btoa(binary) },
+            });
+          }
+        } catch (e) {
+          console.error("No se pudo cargar la captura del CR:", e);
+        }
+      }
     } else if (vin) {
       content.push({ type: "text", text: `VIN a analizar: ${vin}. Nuestro bot de Manheim no tiene este auto guardado (no salió en las búsquedas guardadas, o quedó descartado por el filtro) — usa tu conocimiento general del VIN (marca/modelo/año/origen) y dile a Joseph explícitamente que este auto no está en el bot, así que para título/odómetro/grado/daños necesitas que te pegue el Condition Report (texto, foto o PDF) o el dato manual.` });
       resumenPartes.push(`VIN: ${vin}`);

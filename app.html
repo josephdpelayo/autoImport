@@ -1395,6 +1395,7 @@
       <div style="font-size:13px" id="ps-vendedor">—</div>
     </div>
     <div id="ps-notas-bot-wrap" style="margin-bottom:12px"></div>
+    <div id="ps-condicion-wrap" style="margin-bottom:12px"></div>
 
     <div class="field" style="margin-bottom:12px">
       <label>Análisis con IA</label>
@@ -1686,6 +1687,37 @@ function analisisHtml(texto) {
     .replace(/\n/g, '<br>');
 }
 
+function condicionHtml(p) {
+  const tieneDatos = p.titulo_estado != null || p.luz_azul != null || p.dano_estructural != null
+    || p.salvage != null || p.canal_tra != null || p.drivable != null || p.motor_enciende != null
+    || (Array.isArray(p.danos) && p.danos.length > 0) || p.cr_screenshot_url;
+  if (!tieneDatos) return '';
+
+  const riesgo = (label, val) => val === true
+    ? `<div style="font-size:12px;color:var(--red);margin-top:4px">⚠️ ${label}</div>`
+    : val === false ? `<div style="font-size:12px;color:var(--text3);margin-top:4px">✓ Sin ${label.toLowerCase()}</div>` : '';
+
+  const filas = [
+    p.titulo_estado ? `<div style="font-size:12px;color:var(--text2);margin-top:4px">Título: ${p.titulo_estado}</div>` : '',
+    riesgo('Luz azul (título ausente)', p.luz_azul),
+    riesgo('Daño estructural', p.dano_estructural),
+    riesgo('Salvage', p.salvage),
+    riesgo('Canal TRA', p.canal_tra),
+    p.drivable === false ? `<div style="font-size:12px;color:var(--red);margin-top:4px">⚠️ No Drivable</div>` : '',
+    p.motor_enciende === false ? `<div style="font-size:12px;color:var(--red);margin-top:4px">⚠️ Motor no enciende</div>` : '',
+  ].filter(Boolean).join('');
+
+  const danos = Array.isArray(p.danos) && p.danos.length
+    ? `<div style="font-size:12px;color:var(--text2);margin-top:6px"><b>Daños reportados:</b>${p.danos.map(d=>`<div style="margin-top:2px">• ${d}</div>`).join('')}</div>`
+    : '';
+
+  const shot = p.cr_screenshot_url
+    ? `<a href="${p.cr_screenshot_url}" target="_blank" style="display:block;margin-top:8px;font-size:12px;color:var(--blue)"><i class="ti ti-photo"></i> Ver captura completa del Condition Report</a>`
+    : '';
+
+  return `<div class="field"><label>Condición (bot)</label>${filas || '<div style="font-size:12px;color:var(--text3);margin-top:4px">Sin datos de condición todavía</div>'}${danos}${shot}</div>`;
+}
+
 window.notif = async function(titulo, cuerpo, datos = {}) {
   try {
     await fetch(PUSH_EDGE_URL, {
@@ -1959,6 +1991,7 @@ window.openProspecto = function(vin) {
   document.getElementById('ps-notas-bot-wrap').innerHTML = notas.length
     ? `<div class="field"><label>Notas del bot</label>${notas.map(n=>`<div style="font-size:12px;color:var(--text2);margin-top:4px">ℹ️ ${n}</div>`).join('')}</div>`
     : '';
+  document.getElementById('ps-condicion-wrap').innerHTML = condicionHtml(p);
   document.getElementById('ps-nota-usuario').value = p.notas_usuario || '';
   document.getElementById('ps-link').href = p.link || '#';
   document.getElementById('ps-analisis-ia').innerHTML = p.analisis_ia ? analisisHtml(p.analisis_ia) : '<span style="color:var(--text3)">Sin analizar todavía.</span>';

@@ -21,6 +21,24 @@ cuando termines — la sesión queda guardada en `.chrome-profile/` (no se sube 
 
 Si la sesión expiró, `scan.js` te avisa y te pide correr `node login.js` de nuevo.
 
+### Buscar un carro específico (fuera de las búsquedas guardadas)
+
+```bash
+node scan.js --vin=3KPFK4A70JE255019
+node scan.js --url="https://search.manheim.com/results#/details/3KPFK4A70JE255019/OVE"
+```
+
+Abre tu sesión de Manheim, busca ese VIN puntual, lo trae aunque no cumpla los filtros
+de negocio (solo lo marca con advertencia si incumple algo) y lo guarda en Prospectos —
+después ya aparece con datos reales en la Mesa de análisis de la app, en vez de solo el
+VIN. Útil cuando alguien te manda un link de un carro que no salió en tus búsquedas
+guardadas.
+
+Nota: el selector del buscador de Manheim (`SEARCH_INPUT_SELECTORS` en `scan.js`) se
+armó sin poder probarlo en vivo — si la primera corrida no encuentra el buscador, el
+script te lo dice en consola; avísame qué mensaje salió (o el HTML del campo de
+búsqueda) y ajustamos el selector.
+
 ## Qué filtra
 
 Ver `config.js` para los valores exactos. En resumen:
