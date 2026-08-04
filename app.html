@@ -483,6 +483,7 @@
   <button class="bn" onclick="goScreen('gasto')" id="bn-gasto"><i class="ti ti-receipt"></i><span>Gasto</span></button>
   <button class="bn" onclick="goScreen('caja')" id="bn-caja"><i class="ti ti-wallet"></i><span>Caja</span></button>
   <button class="bn" onclick="goScreen('stats')" id="bn-stats"><i class="ti ti-chart-bar"></i><span>Stats</span></button>
+  <button class="bn" onclick="goScreen('mesa-analisis')" id="bn-mesa-analisis"><i class="ti ti-sparkles"></i><span>IA</span></button>
 </nav>
 
 <!-- FAB -->
@@ -1546,7 +1547,7 @@ window.goScreen = function(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id)?.classList.add('active');
   document.querySelectorAll('.bn').forEach(b=>b.classList.remove('active'));
-  const bnMap = {dashboard:'bn-dashboard',autos:'bn-autos',gasto:'bn-gasto',caja:'bn-caja',stats:'bn-stats'};
+  const bnMap = {dashboard:'bn-dashboard',autos:'bn-autos',gasto:'bn-gasto',caja:'bn-caja',stats:'bn-stats','mesa-analisis':'bn-mesa-analisis'};
   if(bnMap[id]) document.getElementById(bnMap[id])?.classList.add('active');
   document.getElementById('fab').style.display = id==='dashboard'?'flex':'none';
   // Load data on switch
