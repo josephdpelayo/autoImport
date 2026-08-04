@@ -65,8 +65,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { vin, texto, pdfBase64, imagenBase64 } = body;
+    const { texto, pdfBase64, imagenBase64 } = body;
+    let { vin } = body;
     const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY")! });
+
+    // Si no llegó VIN explícito, intenta extraerlo de texto/link pegado
+    // (ej. links de search.manheim.com traen el VIN en la URL).
+    if (!vin && texto) {
+      const vinMatch = texto.toUpperCase().match(/[A-HJ-NPR-Z0-9]{17}/);
+      if (vinMatch) vin = vinMatch[0];
+    }
 
     let prospecto = null;
     if (vin) {
@@ -88,7 +96,7 @@ Deno.serve(async (req) => {
       });
       resumenPartes.push(`VIN: ${prospecto.vin} (${prospecto.titulo})`);
     } else if (vin) {
-      content.push({ type: "text", text: `VIN a analizar: ${vin}. No tengo datos previos recopilados de este auto — usa tu conocimiento general del VIN (marca/modelo/año/origen) y lo que te compartan a continuación.` });
+      content.push({ type: "text", text: `VIN a analizar: ${vin}. Nuestro bot de Manheim no tiene este auto guardado (no salió en las búsquedas guardadas, o quedó descartado por el filtro) — usa tu conocimiento general del VIN (marca/modelo/año/origen) y dile a Joseph explícitamente que este auto no está en el bot, así que para título/odómetro/grado/daños necesitas que te pegue el Condition Report (texto, foto o PDF) o el dato manual.` });
       resumenPartes.push(`VIN: ${vin}`);
     }
 
